@@ -227,8 +227,8 @@ public class FirewallVpnService extends VpnService implements Runnable {
                 return false;
             }
 
-            //转发给本地TCP服务器
             ipHeader.setSourceIP(ipHeader.getDestinationIP());
+            //转发给本地TCP服务器
             ipHeader.setDestinationIP(LOCAL_IP);
             tcpHeader.setDestinationPort(mTcpProxyServer.port);
 
@@ -236,7 +236,6 @@ public class FirewallVpnService extends VpnService implements Runnable {
             mVPNOutputStream.write(ipHeader.mData, ipHeader.mOffset, size);
             //注意顺序
             session.bytesSent += tcpDataSize;
-            mSentBytes += size;
         }
         return true;
     }
