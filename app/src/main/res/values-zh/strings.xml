@@ -1,3 +1,6 @@
 <resources>
-    <string name="app_name">抓包App</string>
+    <string name="app_name">Hi</string>
+    <string name="title_activity_main">Hi</string>
+    <string name="title_activity_cfg">设置</string>
+    <string name="text_default">Default</string>
 </resources>

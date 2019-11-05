@@ -15,7 +15,7 @@
             android:theme="@style/AppTheme">
         <activity
                 android:name=".cfg"
-                android:label="@string/title_activity_cfg"
+                android:label="@string/title_activity_cfg" android:parentActivityName=".MainActivity"
                 android:theme="@style/AppTheme.NoActionBar">
         </activity>
 
@@ -30,7 +30,7 @@
         </service>
 
         <activity android:name=".MainActivity"
-                android:label="Hi">
+                android:label="@string/title_activity_main">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
 

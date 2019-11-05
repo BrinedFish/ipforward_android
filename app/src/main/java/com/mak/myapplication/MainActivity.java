@@ -6,13 +6,11 @@ import android.os.Looper;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.os.Handler;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 import com.minhui.vpn.forwardConfig;
-import com.minhui.vpn.utils.ThreadProxy;
 import com.minhui.vpn.utils.VpnServiceHelper;
 import android.widget.Button;
 import android.widget.EditText;
@@ -20,9 +18,11 @@ import android.widget.EditText;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity {
-    private static final String cfgUrl = "http://192.168.41.77/lst.txt1";
+    private static final String cfgUrl = "http://192.168.4.77/lst.txt";
     final Handler mHandler = new Handler();
     Button btn_start;
     EditText editText_rule;
@@ -39,8 +39,6 @@ public class MainActivity extends AppCompatActivity {
         btn_start.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.d("aaaaaaa", "onClick: ------------------------------");
-                //finish();
                 if(VpnServiceHelper.vpnRunningStatus()){
                     closeVpn();
                 }else {
@@ -88,9 +86,12 @@ public class MainActivity extends AppCompatActivity {
         View dialogView = View.inflate(this, R.layout.dlg_loading, null);
         builder.setView(dialogView) ;
         final AlertDialog loadingalertDialog = builder.create();
+        loadingalertDialog.setCanceledOnTouchOutside(false);
+        loadingalertDialog.setCancelable(false);
         loadingalertDialog.show();
 
-        ThreadProxy.getInstance().execute(new Runnable() {
+        Executor g = Executors.newSingleThreadExecutor();
+        g.execute(new Runnable() {
             @Override
             public void run() {
                 String msg = "";
@@ -121,19 +122,13 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
         if (id == R.id.down_cfg) {
             downloadCfg(cfgUrl);
             return true;
