@@ -25,12 +25,13 @@ public class cfg extends AppCompatActivity {
             public void onClick(View view){
                 finish();
             }
-        })
+        });
+        final SharedPreferences sp = getSharedPreferences(getString(R.string.app_name), Context.MODE_PRIVATE);
+
         FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                SharedPreferences sp = getSharedPreferences(getString(R.string.app_name), Context.MODE_PRIVATE);
                 SharedPreferences.Editor ed = sp.edit();
                 ed.putString("api_addr", edit_api_addr.getText().toString());
                 ed.apply();
@@ -38,7 +39,9 @@ public class cfg extends AppCompatActivity {
                         .setAction("Action", null).show();
             }
         });
+
         edit_api_addr = findViewById(R.id.edit_api_addr);
+        edit_api_addr.setText(sp.getString("api_addr",""));
     }
 
 }
