@@ -66,34 +66,37 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run(final ApiResult result) {
                 loadingDialog.dismiss();
-                if (!result.ok){
-                    //认证失败
-                    MainActivity.this.runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
+                MainActivity.this.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (!result.ok){
+                            //认证失败
                             Toast.makeText(getApplicationContext(), result.msg, Toast.LENGTH_SHORT).show();
                             ShowAuthDlg();
+                        }else{
+                            String svrVer = result.data.optString("version","");
+                            if (!Api.sdkVersion.equals(svrVer)){
+                                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                                builder.setCancelable(false)
+                                        .setMessage(getString(R.string.text_update))
+                                        .setTitle(getString(R.string.text_update_title))
+                                        .setPositiveButton("ok", new DialogInterface.OnClickListener(){
+                                            @Override
+                                            public void onClick(DialogInterface dlg, int paramInt) {
+                                                dlg.dismiss();
+                                                Intent intent = new Intent();
+                                                intent.setData(Uri.parse("http://www.baidu.com/"));
+                                                intent.setAction(Intent.ACTION_VIEW);
+                                                startActivity(intent);
+                                                MainActivity.this.finish();
+                                            }
+                                        }).show();
+                            }else{
+                                downloadCfg();
+                            }
                         }
-                    });
-                }else{
-                    String svrVer = result.data.optString("version","");
-                    if (svrVer != Api.sdkVersion){
-                        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-                        builder.setCancelable(false)
-                            .setMessage(getString(R.string.text_update))
-                            .setTitle(getString(R.string.text_update_title))
-                            .setPositiveButton("ok", new DialogInterface.OnClickListener(){
-                                @Override
-                                public void onClick(DialogInterface dlg, int paramInt) {
-                                    dlg.dismiss();
-                                    Intent intent = new Intent();
-                                    intent.setData(Uri.parse("http://www.baidu.com/"));
-                                    intent.setAction(Intent.ACTION_VIEW);
-                                    startActivity(intent);
-                                }
-                            }).show();
                     }
-                }
+                });
             }
         });
     }
@@ -114,24 +117,24 @@ public class MainActivity extends AppCompatActivity {
                 Api.getAuth(MainActivity.this, new ApiCallBack<ApiResult>() {
                     @Override
                     public void run(final ApiResult result) {
-                        if (result.ok) {
-                            authDialog.dismiss();
-                            checkAuth();
-                        }else{
-                            MainActivity.this.runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
+                        loadingDialog.dismiss();
+                        MainActivity.this.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (result.ok) {
+                                    authDialog.dismiss();
+                                    checkAuth();
+                                }else{
                                     Toast.makeText(getApplicationContext(), result.msg, Toast.LENGTH_SHORT).show();
                                 }
-                            });
-                        }
-                        loadingDialog.dismiss();
+                            }
+                        });
                     }
                 }, edt_auth_key.getText().toString());
             }
         });
     }
-     private AlertDialog CreateLoadingDialog(){
+    private AlertDialog CreateLoadingDialog(){
          AlertDialog.Builder builder = new AlertDialog.Builder(this);
          View dialogView = View.inflate(this, R.layout.dlg_loading, null);
          builder.setView(dialogView) ;
