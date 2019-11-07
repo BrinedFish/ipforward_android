@@ -33,7 +33,7 @@ public class NatSession implements Serializable {
     public String toString() {
 //        return String.format("%s/%s:%d packet: %d", remoteIpStr, CommonMethods.ipIntToString(remoteIP),
 //                remotePort & 0xFFFF, packetSent);
-        return String.format(Locale.ENGLISH,"%s:  %d <=> %s:%d packet: %d", type, localPort, remoteIpStr,
+        return String.format(Locale.ENGLISH,"%s:  %d <=> %s:%d packet: %d", type, localPort & 0xFFFF, remoteIpStr,
                 remotePort & 0xFFFF, packetSent);
 
     }

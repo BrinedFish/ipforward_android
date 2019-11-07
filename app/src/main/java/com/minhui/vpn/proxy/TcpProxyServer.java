@@ -1,5 +1,6 @@
 package com.minhui.vpn.proxy;
 
+import android.net.VpnService;
 import com.minhui.vpn.*;
 import com.minhui.vpn.nat.NatSession;
 import com.minhui.vpn.nat.NatSessionManager;
@@ -20,12 +21,13 @@ public class TcpProxyServer implements Runnable {
     private static final String TAG = "TcpProxyServer";
     public boolean Stopped;
     public short port;
-
+    private VpnService vpnService;
     Selector mSelector;
     ServerSocketChannel mServerSocketChannel;
     Thread mServerThread;
 
-    public TcpProxyServer(int port) throws IOException {
+    public TcpProxyServer(VpnService vpnService, int port) throws IOException {
+        this.vpnService = vpnService;
         mSelector = Selector.open();
 
         mServerSocketChannel = ServerSocketChannel.open();
@@ -83,6 +85,7 @@ public class TcpProxyServer implements Runnable {
                 }
                 Set<SelectionKey> selectionKeys = mSelector.selectedKeys();
                 if (selectionKeys == null) {
+                    Thread.sleep(5);
                     continue;
                 }
                 Iterator<SelectionKey> keyIterator = selectionKeys.iterator();
@@ -93,7 +96,6 @@ public class TcpProxyServer implements Runnable {
                             if (key.isAcceptable()) {
                                 onAccepted(key);
                             } else {
-                                //not Tcp?
                                 Object attachment = key.attachment();
                                 if (attachment instanceof KeyHandler) {
                                     ((KeyHandler) attachment).onKeyReady(key);
@@ -120,7 +122,7 @@ public class TcpProxyServer implements Runnable {
         NatSession session = NatSessionManager.getSession(portKey);
         if (session != null) {
             //如果没有建立连接, 查找转发配置
-            forwardConfigInetAddress fci = forwardConfig.getAddress(session.remoteIP, session.remotePort);
+            forwardConfigInetAddress fci = ForwardConfig.getInstance().getAddress(session.remoteIP, session.remotePort);
             if (fci != null) {
                 return new InetSocketAddress(fci.address, fci.port);
             }
@@ -131,15 +133,15 @@ public class TcpProxyServer implements Runnable {
 
     private void onAccepted(SelectionKey key) {
         TcpTunnel localTunnel = null;
+        TcpTunnel remoteTunnel = null;
         try {
             SocketChannel localChannel = mServerSocketChannel.accept();
-            localTunnel = TunnelFactory.wrap(localChannel, mSelector);
+            localTunnel = TunnelFactory.CreateLocalTunnel(vpnService, localChannel, mSelector);
             short portKey = (short) localChannel.socket().getPort();
             InetSocketAddress destAddress = getDestAddress(localChannel);
             if (destAddress != null) {
-                TcpTunnel remoteTunnel = TunnelFactory.createTunnelByConfig(destAddress, mSelector, portKey);
+                remoteTunnel = TunnelFactory.CreateRemoteTunnel(vpnService, destAddress, mSelector, portKey);
                 //关联兄弟
-                remoteTunnel.setIsHttpsRequest(localTunnel.isHttpsRequest());
                 remoteTunnel.setBrotherTunnel(localTunnel);
                 localTunnel.setBrotherTunnel(remoteTunnel);
                 //开始连接
@@ -150,6 +152,9 @@ public class TcpProxyServer implements Runnable {
 
             if (localTunnel != null) {
                 localTunnel.dispose();
+            }
+            if (remoteTunnel != null) {
+                remoteTunnel.dispose();
             }
         }
     }

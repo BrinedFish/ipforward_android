@@ -4,18 +4,28 @@ import com.minhui.vpn.utils.CommonMethods;
 
 import java.util.concurrent.ConcurrentHashMap;
 
-public class forwardConfig {
-    private static final ConcurrentHashMap<Long, forwardConfigInetAddress> sessions = new ConcurrentHashMap<>();
+public class ForwardConfig {
+    private static ForwardConfig instance;
+    private final ConcurrentHashMap<Long, forwardConfigInetAddress> sessions = new ConcurrentHashMap<>();
 
-    public static forwardConfigInetAddress getAddress(Long portKey) {
+    private ForwardConfig(){ }
+
+    public static ForwardConfig getInstance() {
+        if(instance == null){
+            instance = new ForwardConfig();
+        }
+        return instance;
+    }
+
+    public forwardConfigInetAddress getAddress(Long portKey) {
         return sessions.get(portKey);
     }
-    public static forwardConfigInetAddress getAddress(int ip, short port) {
+    public forwardConfigInetAddress getAddress(int ip, short port) {
         long key = ((long)ip << 32) | port;
         return getAddress(key);
     }
 
-    public static void init(String cfgData)
+    public void init(String cfgData)
     {
         sessions.clear();
         for (String aLine : cfgData.split("\\n")) {

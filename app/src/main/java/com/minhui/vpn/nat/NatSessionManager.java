@@ -55,6 +55,7 @@ public class NatSessionManager {
         while (iterator.hasNext()) {
             Map.Entry<Short, NatSession> next = iterator.next();
             if (now - next.getValue().lastRefreshTime > SESSION_TIME_OUT_NS) {
+                System.out.println("====== session time out ======" + next.getValue().toString());
                 iterator.remove();
             }
         }
@@ -97,6 +98,10 @@ public class NatSessionManager {
     }
 
     public static void removeSession(short portKey) {
+        NatSession session = sessions.get(portKey);
+        if (session!=null) {
+            System.out.println("====== session removed ======" + session.toString());
+        }
         sessions.remove(portKey);
     }
 }

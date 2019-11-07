@@ -4,9 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.VpnService;
-import android.os.Build;
-import android.os.Handler;
-import android.os.ParcelFileDescriptor;
+import android.os.*;
 
 
 import com.minhui.vpn.*;
@@ -30,11 +28,6 @@ import java.util.Arrays;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class FirewallVpnService extends VpnService implements Runnable {
-    public static final String ACTION_START_VPN = "com.minhui.START_VPN";
-    public static final String ACTION_CLOSE_VPN = "com.minhui.roav.CLOSE_VPN";
-    private static final String FACEBOOK_APP = "com.facebook.katana";
-    private static final String YOUTUBE_APP = "com.google.android.youtube";
-    private static final String GOOGLE_MAP_APP = "com.google.android.apps.maps";
 
     private static final String VPN_ADDRESS = "10.0.0.2"; // Only IPv4 support for now
     private static final String VPN_ROUTE = "0.0.0.0"; // Intercept everything
@@ -43,8 +36,6 @@ public class FirewallVpnService extends VpnService implements Runnable {
     private static final String AMERICA = "208.67.222.222";
     private static final String HK_DNS_SECOND = "205.252.144.228";
     private static final String CHINA_DNS_FIRST = "114.114.114.114";
-    public static final String BROADCAST_VPN_STATE = "com.minhui.localvpn.VPN_STATE";
-    public static final String SELECT_PACKAGE_ID = "select_protect_package_id";
     private static final String TAG = "FirewallVpnService";
     private static int ID;
     private static int LOCAL_IP;
@@ -70,6 +61,7 @@ public class FirewallVpnService extends VpnService implements Runnable {
     public static long vpnStartTime;
     public static String lastVpnStartTimeFormat = null;
     private SharedPreferences sp;
+    public ForwardConfig forwardConfig;
 
     public FirewallVpnService() {
         ID++;
@@ -89,10 +81,10 @@ public class FirewallVpnService extends VpnService implements Runnable {
     public void onCreate() {
         DebugLog.i("VPNService(%s) created.\n", ID);
         sp = getSharedPreferences(VPNConstants.VPN_SP_NAME, Context.MODE_PRIVATE);
-        VpnServiceHelper.onVpnServiceCreated(this);
+        IsRunning = true;
         mVPNThread = new Thread(this, "VPNServiceThread");
         mVPNThread.start();
-        setVpnRunningStatus(true);
+        forwardConfig = ForwardConfig.getInstance();
         //   notifyStatus(new VPNEvent(VPNEvent.Status.STARTING));
         super.onCreate();
     }
@@ -108,7 +100,6 @@ public class FirewallVpnService extends VpnService implements Runnable {
         if (mVPNThread != null) {
             mVPNThread.interrupt();
         }
-        VpnServiceHelper.onVpnServiceDestroy();
         super.onDestroy();
     }
 
@@ -293,18 +284,15 @@ public class FirewallVpnService extends VpnService implements Runnable {
             waitUntilPrepared();
             udpQueue = new ConcurrentLinkedQueue<>();
             //启动TCP代理服务
-            mTcpProxyServer = new TcpProxyServer(0);
+            mTcpProxyServer = new TcpProxyServer(this, 0);
             mTcpProxyServer.start();
             udpServer = new UDPServer(this, udpQueue);
             udpServer.start();
             NatSessionManager.clearAllSession();
             DebugLog.i("DnsProxy started.\n");
-
             while (IsRunning) {
                 runVPN();
             }
-
-
         } catch (InterruptedException e) {
             DebugLog.e("VpnService run catch an exception %s.\n", e);
         } catch (Exception e) {
@@ -329,6 +317,7 @@ public class FirewallVpnService extends VpnService implements Runnable {
 
     private synchronized void dispose() {
         try {
+            IsRunning = false;
             //断开VPN
             disconnectVPN();
 
@@ -343,7 +332,6 @@ public class FirewallVpnService extends VpnService implements Runnable {
             }
 
             stopSelf();
-            setVpnRunningStatus(false);
         } catch (Exception e) {
 
         }
@@ -358,4 +346,18 @@ public class FirewallVpnService extends VpnService implements Runnable {
     public void setVpnRunningStatus(boolean isRunning) {
         IsRunning = isRunning;
     }
+
+
+
+    @Override
+    public IBinder onBind(Intent intent) {
+        return new ServiceBinder();
+    }
+    public class ServiceBinder extends Binder {
+        public FirewallVpnService getInstance() {
+            return FirewallVpnService.this;
+        }
+    }
+
+
 }

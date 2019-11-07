@@ -1,5 +1,6 @@
 package com.minhui.vpn.tunnel;
 
+import android.net.VpnService;
 import com.minhui.vpn.nat.NatSession;
 import com.minhui.vpn.nat.NatSessionManager;
 
@@ -9,11 +10,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.Selector;
 
 public class RemoteTcpTunnel extends RawTcpTunnel {
-    NatSession session;
-
-    public RemoteTcpTunnel(InetSocketAddress serverAddress, Selector selector, short portKey) throws IOException {
-        super(serverAddress, selector, portKey);
-        session = NatSessionManager.getSession(portKey);
+    public RemoteTcpTunnel(VpnService vpnService, InetSocketAddress serverAddress, Selector selector, short portKey) throws IOException {
+        super(vpnService, serverAddress, selector, portKey);
     }
 
 

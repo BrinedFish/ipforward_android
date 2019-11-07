@@ -1,10 +1,10 @@
 package com.minhui.vpn.tunnel;
 
+import android.net.VpnService;
 import com.minhui.vpn.KeyHandler;
 import com.minhui.vpn.nat.NatSessionManager;
 import com.minhui.vpn.service.FirewallVpnService;
 import com.minhui.vpn.utils.DebugLog;
-import com.minhui.vpn.utils.VpnServiceHelper;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -29,10 +29,6 @@ public abstract class TcpTunnel implements KeyHandler {
 
     private Selector mSelector;
     /**
-     * http报文
-     */
-    private boolean isHttpsRequest = false;
-    /**
      * 与外网的通信两个Tunnel负责，
      * 一个负责Apps与TCP代理服务器的通信，一个负责TCP代理服务器与外网服务器的通信
      * Apps与外网服务器的数据交换靠这两个Tunnel来进行
@@ -43,12 +39,16 @@ public abstract class TcpTunnel implements KeyHandler {
     short portKey;
     ConcurrentLinkedQueue<ByteBuffer> needWriteData = new ConcurrentLinkedQueue<>();
 
-    public TcpTunnel(SocketChannel innerChannel, Selector selector) {
+    private final VpnService vpnService;
+
+    public TcpTunnel(VpnService vpnService, SocketChannel innerChannel, Selector selector) {
+        this.vpnService = vpnService;
         mInnerChannel = innerChannel;
         mSelector = selector;
     }
 
-    public TcpTunnel(InetSocketAddress serverAddress, Selector selector, short portKey) throws IOException {
+    public TcpTunnel(VpnService vpnService, InetSocketAddress serverAddress, Selector selector, short portKey) throws IOException {
+        this.vpnService = vpnService;
         SocketChannel innerChannel = SocketChannel.open();
         innerChannel.configureBlocking(false);
         this.mInnerChannel = innerChannel;
@@ -91,7 +91,7 @@ public abstract class TcpTunnel implements KeyHandler {
 
     public void connect(InetSocketAddress destAddress) throws Exception {
         //保护socket不走VPN
-        if (VpnServiceHelper.protect(mInnerChannel.socket())) {
+        if (vpnService.protect(mInnerChannel.socket())) {
             mDestAddress = destAddress;
             //注册连接事件
             mInnerChannel.register(mSelector, SelectionKey.OP_CONNECT, this);
@@ -134,8 +134,6 @@ public abstract class TcpTunnel implements KeyHandler {
             int bytesRead = mInnerChannel.read(buffer);
             if (bytesRead > 0) {
                 buffer.flip();
-                //先让子类处理，例如解密数据
-                afterReceived(buffer);
 
                 sendToBrother(key, buffer);
 
@@ -152,8 +150,7 @@ public abstract class TcpTunnel implements KeyHandler {
     protected void sendToBrother(SelectionKey key, ByteBuffer buffer) throws Exception {
         //将读到的数据，转发给兄弟
         if (isTunnelEstablished() && buffer.hasRemaining()) {
-            //发送之前，先让子类处理，例如做加密等。
-            //    mBrotherTunnel.beforeSend(buffer);
+
             mBrotherTunnel.getWriteDataFromBrother(buffer);
 
         }
@@ -185,7 +182,7 @@ public abstract class TcpTunnel implements KeyHandler {
 
     protected int write(ByteBuffer buffer) throws Exception {
         int byteSendSum = 0;
-        beforeSend(buffer);
+
         while (buffer.hasRemaining()) {
             int byteSent = mInnerChannel.write(buffer);
             byteSendSum += byteSent;
@@ -199,7 +196,6 @@ public abstract class TcpTunnel implements KeyHandler {
 
     public void onWritable(SelectionKey key) {
         try {
-            //发送之前，先让子类处理，例如做加密等
             ByteBuffer mSendRemainBuffer = needWriteData.poll();
             if (mSendRemainBuffer == null) {
                 return;
@@ -251,14 +247,6 @@ public abstract class TcpTunnel implements KeyHandler {
             onDispose();
             NatSessionManager.removeSession(portKey);
         }
-    }
-
-    public void setIsHttpsRequest(boolean isHttpsRequest) {
-        this.isHttpsRequest = isHttpsRequest;
-    }
-
-    public boolean isHttpsRequest() {
-        return isHttpsRequest;
     }
 
 
