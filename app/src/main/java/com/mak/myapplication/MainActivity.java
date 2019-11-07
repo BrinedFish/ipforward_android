@@ -1,15 +1,11 @@
 package com.mak.myapplication;
 
 import android.app.AlertDialog;
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Looper;
-import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.os.Handler;
-import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -18,25 +14,29 @@ import com.minhui.vpn.ForwardConfig;
 import com.minhui.vpn.utils.VpnServiceHelper;
 import android.widget.Button;
 import android.widget.EditText;
+import org.json.JSONArray;
+import org.json.JSONException;
 
-import java.io.*;
-import java.net.HttpURLConnection;
-import java.net.Proxy;
-import java.net.URL;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity {
-    private static final String DefcfgUrl = "http://192.168.4.77/lst.txt";
     private final Handler mHandler = new Handler();
     private Button btn_start;
     private EditText editText_rule;
     private VpnServiceHelper vpnServiceHelper;
+    private AlertDialog authDialog = null;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+//        Thread ddd = new Thread(new Runnable() {
+//            @Override
+//            public void run() {
+//                Api.HttpReqs("http://192.168.4.77:54824/api/x/gettoken",true, "{\"data\":\"111111111111111111111111\"}");
+//            }
+//        });
+//        ddd.start();
+        checkAuth();
         vpnServiceHelper = new VpnServiceHelper(this);
 
         btn_start = findViewById(R.id.btn_1);
@@ -67,66 +67,91 @@ public class MainActivity extends AppCompatActivity {
         mHandler.postDelayed(r, 1000);
     }
 
-    public String iS2String(InputStream in) throws IOException {
-        StringBuilder out = new StringBuilder();
-        byte[] arrayOfByte = new byte[4096];
-        while (true) {
-            int i = in.read(arrayOfByte);
-            if (i == -1) {
-                break;
-            }
-            out.append(new String(arrayOfByte, 0, i));
-        }
-        return out.toString();
-    }
-
-    private void downloadCfg(){
+    private void checkAuth(){
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        View dialogView = View.inflate(this, R.layout.dlg_loading, null);
+        View dialogView = View.inflate(this, R.layout.activity_auth, null);
         builder.setView(dialogView) ;
-        final AlertDialog loadingalertDialog = builder.create();
-        loadingalertDialog.setCanceledOnTouchOutside(false);
-        loadingalertDialog.setCancelable(false);
-        loadingalertDialog.show();
-
-        Executor g = Executors.newSingleThreadExecutor();
-        g.execute(new Runnable() {
+        authDialog = builder.create();
+        authDialog.setCanceledOnTouchOutside(false);
+        authDialog.setCancelable(false);
+        authDialog.show();
+        final EditText edt_auth_key = authDialog.findViewById(R.id.edt_auth_key);
+        authDialog.findViewById(R.id.btn_ok).setOnClickListener(new View.OnClickListener() {
             @Override
-            public void run() {
-                String msg = "";
+            public void onClick(View v) {
+                Toast.makeText(getApplicationContext(), edt_auth_key.getText(), Toast.LENGTH_SHORT).show();
+
+                final AlertDialog loadingDialog = CreateLoadingDialog();
                 try {
-                    SharedPreferences sp = getSharedPreferences(getString(R.string.app_name), Context.MODE_PRIVATE);
-                    String urlStr = sp.getString("api_addr","");
-                    if (TextUtils.isEmpty(urlStr)){
-                        urlStr = DefcfgUrl;
-                    }
-                    HttpURLConnection httpURLConnection = (HttpURLConnection) (new URL(urlStr)).openConnection(Proxy.NO_PROXY);
-                    httpURLConnection.setConnectTimeout(10000);
-                    httpURLConnection.setRequestMethod("GET");
-                    httpURLConnection.connect();
-                    if (httpURLConnection.getResponseCode() == 200) {
-                        final String data = iS2String(httpURLConnection.getInputStream());
-                        //System.out.println(data);
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                editText_rule.setText(data);
+                    Api.getAuth(MainActivity.this, new ApiCallBack<ApiResult>() {
+                        @Override
+                        public void run(final ApiResult result) {
+                            if (result.ok) {
+                                Api.setApiToken(MainActivity.this, result.data.optString("token"));
+                                authDialog.dismiss();
+                            }else{
+                                MainActivity.this.runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        Toast.makeText(getApplicationContext(), result.msg, Toast.LENGTH_SHORT).show();
+                                    }
+                                });
                             }
-                        });
-                        msg = "ok";
-                    }else{
-                        msg = httpURLConnection.getResponseCode()+"";
-                    }
-                } catch (Exception exception) {
-                    exception.printStackTrace();
-                    msg = exception.getMessage();
+                            loadingDialog.dismiss();
+                        }
+                    }, edt_auth_key.getText().toString());
+                } catch (Exception e) {
+                    Toast.makeText(getApplicationContext(), e.getMessage(), Toast.LENGTH_SHORT).show();
+                    loadingDialog.dismiss();
                 }
-                loadingalertDialog.dismiss();
-                Looper.prepare();
-                Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_SHORT).show();
-                Looper.loop();
             }
         });
+    }
+     private AlertDialog CreateLoadingDialog(){
+         AlertDialog.Builder builder = new AlertDialog.Builder(this);
+         View dialogView = View.inflate(this, R.layout.dlg_loading, null);
+         builder.setView(dialogView) ;
+         AlertDialog loadingDialog = builder.create();
+         loadingDialog.setCanceledOnTouchOutside(false);
+         loadingDialog.setCancelable(false);
+         loadingDialog.show();
+         return loadingDialog;
+     }
+
+    private void downloadCfg(){
+        final AlertDialog loadingDialog = CreateLoadingDialog();
+        try {
+            Api.getForwardTable(this, new ApiCallBack<ApiResult>() {
+                @Override
+                public void run(final ApiResult result) {
+                    MainActivity.this.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            String msg;
+                            if (result.ok){
+                                try {
+                                    editText_rule.setText("");
+                                    JSONArray data = result.data.getJSONArray("list");
+                                    for (int i = 0; i < data.length(); i++) {
+                                        editText_rule.append(data.get(i)+"\r\n");
+                                    }
+                                    msg = "ok";
+                                } catch (JSONException e) {
+                                    msg = e.getMessage();
+                                }
+                            } else{
+                                msg = result.msg;
+                            }
+                            Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_SHORT).show();
+                            loadingDialog.dismiss();
+                        }
+                    });
+                }
+            });
+        } catch (Exception e) {
+            Toast.makeText(getApplicationContext(), e.getMessage(), Toast.LENGTH_SHORT).show();
+            loadingDialog.dismiss();
+        }
     }
 
     @Override
@@ -143,7 +168,7 @@ public class MainActivity extends AppCompatActivity {
             return true;
         } else if (id == R.id.action_settings) {
             Intent cfg = new Intent();
-            cfg.setClass(MainActivity.this, cfg.class);
+            cfg.setClass(MainActivity.this, cfgActivity.class);
             MainActivity.this.startActivity(cfg);
             return true;
         }

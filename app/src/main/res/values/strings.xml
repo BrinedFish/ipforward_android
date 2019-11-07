@@ -3,4 +3,5 @@
     <string name="title_activity_main">Hi</string>
     <string name="title_activity_cfg">Config</string>
     <string name="text_default">Default</string>
+    <string name="title_activity_auth">AuthActivity</string>
 </resources>
