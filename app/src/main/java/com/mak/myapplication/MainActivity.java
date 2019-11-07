@@ -1,7 +1,9 @@
 package com.mak.myapplication;
 
 import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Looper;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -23,25 +25,16 @@ public class MainActivity extends AppCompatActivity {
     private Button btn_start;
     private EditText editText_rule;
     private VpnServiceHelper vpnServiceHelper;
-    private AlertDialog authDialog = null;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-//        Thread ddd = new Thread(new Runnable() {
-//            @Override
-//            public void run() {
-//                Api.HttpReqs("http://192.168.4.77:54824/api/x/gettoken",true, "{\"data\":\"111111111111111111111111\"}");
-//            }
-//        });
-//        ddd.start();
         checkAuth();
         vpnServiceHelper = new VpnServiceHelper(this);
 
         btn_start = findViewById(R.id.btn_1);
         editText_rule = findViewById(R.id.editText_rule);
-        downloadCfg();
         btn_start.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -68,10 +61,48 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void checkAuth(){
+        final AlertDialog loadingDialog = CreateLoadingDialog();
+        Api.getSvrVersion(this, new ApiCallBack<ApiResult>() {
+            @Override
+            public void run(final ApiResult result) {
+                loadingDialog.dismiss();
+                if (!result.ok){
+                    //认证失败
+                    MainActivity.this.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(getApplicationContext(), result.msg, Toast.LENGTH_SHORT).show();
+                            ShowAuthDlg();
+                        }
+                    });
+                }else{
+                    String svrVer = result.data.optString("version","");
+                    if (svrVer != Api.sdkVersion){
+                        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                        builder.setCancelable(false)
+                            .setMessage(getString(R.string.text_update))
+                            .setTitle(getString(R.string.text_update_title))
+                            .setPositiveButton("ok", new DialogInterface.OnClickListener(){
+                                @Override
+                                public void onClick(DialogInterface dlg, int paramInt) {
+                                    dlg.dismiss();
+                                    Intent intent = new Intent();
+                                    intent.setData(Uri.parse("http://www.baidu.com/"));
+                                    intent.setAction(Intent.ACTION_VIEW);
+                                    startActivity(intent);
+                                }
+                            }).show();
+                    }
+                }
+            }
+        });
+    }
+
+    private void ShowAuthDlg(){
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         View dialogView = View.inflate(this, R.layout.activity_auth, null);
         builder.setView(dialogView) ;
-        authDialog = builder.create();
+        final AlertDialog authDialog = builder.create();
         authDialog.setCanceledOnTouchOutside(false);
         authDialog.setCancelable(false);
         authDialog.show();
@@ -79,31 +110,24 @@ public class MainActivity extends AppCompatActivity {
         authDialog.findViewById(R.id.btn_ok).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Toast.makeText(getApplicationContext(), edt_auth_key.getText(), Toast.LENGTH_SHORT).show();
-
                 final AlertDialog loadingDialog = CreateLoadingDialog();
-                try {
-                    Api.getAuth(MainActivity.this, new ApiCallBack<ApiResult>() {
-                        @Override
-                        public void run(final ApiResult result) {
-                            if (result.ok) {
-                                Api.setApiToken(MainActivity.this, result.data.optString("token"));
-                                authDialog.dismiss();
-                            }else{
-                                MainActivity.this.runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        Toast.makeText(getApplicationContext(), result.msg, Toast.LENGTH_SHORT).show();
-                                    }
-                                });
-                            }
-                            loadingDialog.dismiss();
+                Api.getAuth(MainActivity.this, new ApiCallBack<ApiResult>() {
+                    @Override
+                    public void run(final ApiResult result) {
+                        if (result.ok) {
+                            authDialog.dismiss();
+                            checkAuth();
+                        }else{
+                            MainActivity.this.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Toast.makeText(getApplicationContext(), result.msg, Toast.LENGTH_SHORT).show();
+                                }
+                            });
                         }
-                    }, edt_auth_key.getText().toString());
-                } catch (Exception e) {
-                    Toast.makeText(getApplicationContext(), e.getMessage(), Toast.LENGTH_SHORT).show();
-                    loadingDialog.dismiss();
-                }
+                        loadingDialog.dismiss();
+                    }
+                }, edt_auth_key.getText().toString());
             }
         });
     }
@@ -120,38 +144,33 @@ public class MainActivity extends AppCompatActivity {
 
     private void downloadCfg(){
         final AlertDialog loadingDialog = CreateLoadingDialog();
-        try {
-            Api.getForwardTable(this, new ApiCallBack<ApiResult>() {
-                @Override
-                public void run(final ApiResult result) {
-                    MainActivity.this.runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            String msg;
-                            if (result.ok){
-                                try {
-                                    editText_rule.setText("");
-                                    JSONArray data = result.data.getJSONArray("list");
-                                    for (int i = 0; i < data.length(); i++) {
-                                        editText_rule.append(data.get(i)+"\r\n");
-                                    }
-                                    msg = "ok";
-                                } catch (JSONException e) {
-                                    msg = e.getMessage();
+        Api.getForwardTable(this, new ApiCallBack<ApiResult>() {
+            @Override
+            public void run(final ApiResult result) {
+                MainActivity.this.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        String msg;
+                        if (result.ok){
+                            try {
+                                editText_rule.setText("");
+                                JSONArray data = result.data.getJSONArray("list");
+                                for (int i = 0; i < data.length(); i++) {
+                                    editText_rule.append(data.get(i)+"\r\n");
                                 }
-                            } else{
-                                msg = result.msg;
+                                msg = "ok";
+                            } catch (JSONException e) {
+                                msg = e.getMessage();
                             }
-                            Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_SHORT).show();
-                            loadingDialog.dismiss();
+                        } else{
+                            msg = result.msg;
                         }
-                    });
-                }
-            });
-        } catch (Exception e) {
-            Toast.makeText(getApplicationContext(), e.getMessage(), Toast.LENGTH_SHORT).show();
-            loadingDialog.dismiss();
-        }
+                        Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_SHORT).show();
+                        loadingDialog.dismiss();
+                    }
+                });
+            }
+        });
     }
 
     @Override

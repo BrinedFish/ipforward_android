@@ -4,4 +4,6 @@
     <string name="title_activity_cfg">Config</string>
     <string name="text_default">Default</string>
     <string name="title_activity_auth">AuthActivity</string>
+    <string name="text_update">need update</string>
+    <string name="text_update_title">update</string>
 </resources>

@@ -12,10 +12,9 @@ import java.net.URL;
 import java.util.concurrent.*;
 
 public class Api {
-    private static final String sdkVersion = "1";
+    public static final String sdkVersion = "1";
     private static String ApiSvrUrl = "";
     private static String userId = "";
-    private static String ApiToken = "";
 
     private static ExecutorService executor = null;
 
@@ -36,24 +35,6 @@ public class Api {
             }
         }
         return ApiSvrUrl;
-    }
-
-    public static String getApiToken(Context context) throws Exception {
-        if (TextUtils.isEmpty(ApiToken))
-        {
-            SharedPreferences sp = context.getSharedPreferences(context.getString(R.string.app_name), Context.MODE_PRIVATE);
-            ApiToken = sp.getString("ApiToken","");
-            if (TextUtils.isEmpty(ApiToken)) {
-                ApiToken = getTokenFromSvr(context);
-                sp.edit().putString("ApiToken", ApiToken).apply();
-            }
-        }
-        return ApiToken;
-    }
-    public static void setApiToken(Context context, String token) {
-        ApiToken = token;
-        SharedPreferences sp = context.getSharedPreferences(context.getString(R.string.app_name), Context.MODE_PRIVATE);
-        sp.edit().putString("ApiToken", ApiToken).apply();
     }
 
     public static String getUserId(Context context) {
@@ -100,6 +81,7 @@ public class Api {
         }
         return resObj;
     }
+
     private static void ApiHttpReqsSync(final ApiCallBack runnable, final String url,final boolean isPost,final JSONObject jSONObject){
         GetSingleExecutorService().execute(new Runnable() {
             @Override
@@ -111,6 +93,7 @@ public class Api {
             }
         });
     }
+
     private static Future<ApiResult> ApiHttpReqs(final String url,final boolean isPost,final JSONObject jSONObject){
         return GetSingleExecutorService().submit(new Callable<ApiResult>() {
             @Override
@@ -120,38 +103,37 @@ public class Api {
         });
     }
 
-    public static String getTokenFromSvr(Context context) throws Exception {
-        String actionUrl = getApiSvrUrl(context)+"gettoken";
-        JSONObject jSONObject = new JSONObject();
-        jSONObject.put("userid", getUserId(context));
-        jSONObject.put("version", sdkVersion);
-
-        Future<ApiResult> future = ApiHttpReqs(actionUrl, true, jSONObject);
-        ApiResult result = future.get();
-        if (result.ok){
-            return result.data.optString("token","");
-        }else{
-            throw new Exception(result.msg);
-        }
-    }
-
-    public static void getForwardTable(Context context, ApiCallBack runnable) throws Exception {
-        final String actionUrl = getApiSvrUrl(context)+"forwardtable";
+    public static void getForwardTable(Context context, ApiCallBack runnable) {
+        final String actionUrl = getApiSvrUrl(context) + "forwardtable";
         final JSONObject jSONObject = new JSONObject();
-        jSONObject.put("userid", getUserId(context));
-        jSONObject.put("version", sdkVersion);
-        jSONObject.put("token", getApiToken(context));
-
+        try {
+            jSONObject.put("userid", getUserId(context));
+            jSONObject.put("version", sdkVersion);
+        } catch (Exception ignored) {
+        }
         ApiHttpReqsSync(runnable, actionUrl, true, jSONObject);
     }
 
-    public static void getAuth(Context context, ApiCallBack runnable, String auth_key) throws Exception {
-        final String actionUrl = getApiSvrUrl(context)+"auth";
+    public static void getAuth(Context context, ApiCallBack runnable, String auth_key) {
+        final String actionUrl = getApiSvrUrl(context) + "auth";
         final JSONObject jSONObject = new JSONObject();
-        jSONObject.put("userid", getUserId(context));
-        jSONObject.put("version", sdkVersion);
-        jSONObject.put("key", auth_key);
+        try {
+            jSONObject.put("userid", getUserId(context));
+            jSONObject.put("version", sdkVersion);
+            jSONObject.put("key", auth_key);
+        } catch (Exception ignored) {
+        }
+        ApiHttpReqsSync(runnable, actionUrl, true, jSONObject);
+    }
 
+    public static void getSvrVersion(Context context, ApiCallBack runnable) {
+        final String actionUrl = getApiSvrUrl(context) + "checkversion";
+        final JSONObject jSONObject = new JSONObject();
+        try {
+            jSONObject.put("userid", getUserId(context));
+            jSONObject.put("version", sdkVersion);
+        } catch (Exception ignored) {
+        }
         ApiHttpReqsSync(runnable, actionUrl, true, jSONObject);
     }
 
