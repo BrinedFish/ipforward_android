@@ -37,6 +37,12 @@ public class Api {
         return ApiSvrUrl;
     }
 
+    public static void setApiSvrUrl(Context context, String apiSvrUrl) {
+        ApiSvrUrl = apiSvrUrl;
+        SharedPreferences sp = context.getSharedPreferences(context.getString(R.string.app_name), Context.MODE_PRIVATE);
+        sp.edit().putString("ApiSvrUrl", apiSvrUrl).apply();
+    }
+
     public static String getUserId(Context context) {
         if (TextUtils.isEmpty(userId))
         {

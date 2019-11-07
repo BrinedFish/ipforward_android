@@ -4,7 +4,6 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
-import android.os.Looper;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.os.Handler;
@@ -19,7 +18,6 @@ import android.widget.EditText;
 import org.json.JSONArray;
 import org.json.JSONException;
 
-
 public class MainActivity extends AppCompatActivity {
     private final Handler mHandler = new Handler();
     private Button btn_start;
@@ -29,10 +27,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
         checkAuth();
         vpnServiceHelper = new VpnServiceHelper(this);
-
         btn_start = findViewById(R.id.btn_1);
         editText_rule = findViewById(R.id.editText_rule);
         btn_start.setOnClickListener(new View.OnClickListener() {
@@ -76,6 +72,7 @@ public class MainActivity extends AppCompatActivity {
                         }else{
                             String svrVer = result.data.optString("version","");
                             if (!Api.sdkVersion.equals(svrVer)){
+                                final String updateUrl = result.data.optString("url","http://www.baidu.com/");
                                 AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
                                 builder.setCancelable(false)
                                         .setMessage(getString(R.string.text_update))
@@ -85,7 +82,7 @@ public class MainActivity extends AppCompatActivity {
                                             public void onClick(DialogInterface dlg, int paramInt) {
                                                 dlg.dismiss();
                                                 Intent intent = new Intent();
-                                                intent.setData(Uri.parse("http://www.baidu.com/"));
+                                                intent.setData(Uri.parse(updateUrl));
                                                 intent.setAction(Intent.ACTION_VIEW);
                                                 startActivity(intent);
                                                 MainActivity.this.finish();

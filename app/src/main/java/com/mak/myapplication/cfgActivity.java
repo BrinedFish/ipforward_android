@@ -33,7 +33,7 @@ public class cfgActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 SharedPreferences.Editor ed = sp.edit();
-                ed.putString("api_addr", edit_api_addr.getText().toString());
+                ed.putString("ApiSvrUrl", edit_api_addr.getText().toString());
                 ed.apply();
                 Snackbar.make(view, "ok", Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
@@ -41,7 +41,7 @@ public class cfgActivity extends AppCompatActivity {
         });
 
         edit_api_addr = findViewById(R.id.edit_api_addr);
-        edit_api_addr.setText(sp.getString("api_addr",""));
+        edit_api_addr.setText(sp.getString("ApiSvrUrl",""));
     }
 
 }
