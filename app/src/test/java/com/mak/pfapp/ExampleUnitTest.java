@@ -1,4 +1,4 @@
-package com.mak.myapplication;
+package com.mak.pfapp;
 
 import org.junit.Test;
 

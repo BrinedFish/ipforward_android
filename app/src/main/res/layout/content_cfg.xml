@@ -14,9 +14,9 @@
             android:layout_width="match_parent" android:background="#FFF" android:layout_marginBottom="2dp"
             android:layout_height="48dp">
         <TextView
-                android:text="服务器地址："
+                android:text="服务器地址：" android:paddingStart="10dp"
                 android:layout_width="wrap_content" android:gravity="center"
-                android:layout_height="match_parent" android:id="@+id/edit_api_addr_label"/>
+                android:layout_height="match_parent" android:id="@+id/edit_api_addr_label" android:paddingLeft="10dp"/>
         <EditText
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -28,14 +28,20 @@
                 android:ems="10"
                 android:id="@+id/edit_api_addr" android:layout_toEndOf="@id/edit_api_addr_label" android:layout_alignParentEnd="true"/>
     </RelativeLayout>
-    <RelativeLayout android:visibility="gone"
+    <RelativeLayout
             android:layout_width="match_parent" android:background="#FFF" android:layout_marginBottom="2dp"
-            android:layout_height="30dp">
+            android:layout_height="48dp">
 
         <TextView
-                android:text="TextView"
+                android:text="Hentai" android:paddingStart="10dp"
                 android:layout_width="wrap_content" android:gravity="center"
-                android:layout_height="match_parent" android:id="@+id/textView2"/>
+                android:layout_height="match_parent" android:id="@+id/switch_ishentai_label" android:paddingLeft="10dp"/>
+        <Switch
+                android:layout_width="wrap_content" android:layout_alignParentRight="true"
+                android:layout_height="match_parent" android:id="@+id/switch_ishentai" android:paddingRight="20dp"
+                android:layout_alignParentEnd="true"/>
+
+
     </RelativeLayout>
     <RelativeLayout android:visibility="gone"
             android:layout_width="match_parent" android:background="#FFF" android:layout_marginBottom="2dp"

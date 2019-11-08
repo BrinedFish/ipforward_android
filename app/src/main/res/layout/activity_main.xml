@@ -5,7 +5,7 @@
         xmlns:app="http://schemas.android.com/apk/res-auto"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        tools:context="com.mak.myapplication.MainActivity">
+        tools:context="com.mak.pfapp.MainActivity">
 
     <Button
             android:text="连接"

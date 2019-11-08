@@ -1,14 +1,16 @@
-package com.mak.myapplication;
+package com.mak.pfapp;
 
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.text.TextUtils;
+import okio.Timeout;
 import org.json.JSONObject;
 
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.Proxy;
 import java.net.URL;
+import java.util.UUID;
 import java.util.concurrent.*;
 
 public class Api {
@@ -44,9 +46,16 @@ public class Api {
     }
 
     public static String getUserId(Context context) {
-        if (TextUtils.isEmpty(userId))
-        {
-            userId = Utility.getUserId(context);
+        if (TextUtils.isEmpty(userId)) {
+            SharedPreferences sp = context.getSharedPreferences(context.getString(R.string.app_name), Context.MODE_PRIVATE);
+            userId = sp.getString("userid", "");
+            if (TextUtils.isEmpty(userId)) {
+                userId = Utility.getDeviceId(context);
+                if (TextUtils.isEmpty(userId)) {
+                    userId = UUID.randomUUID().toString();
+                }
+                sp.edit().putString("userid", userId).apply();
+            }
         }
         return userId;
     }
@@ -84,6 +93,9 @@ public class Api {
             httpURLConnection.disconnect();
         }catch (Exception ex){
             resObj.msg = ex.getMessage();
+            if (TextUtils.isEmpty(resObj.msg)){
+                resObj.msg = ex.toString();
+            }
         }
         return resObj;
     }

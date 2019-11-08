@@ -1,4 +1,4 @@
-package com.mak.myapplication;
+package com.mak.pfapp;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;
