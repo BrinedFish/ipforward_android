@@ -116,7 +116,16 @@ public class TcpProxyServer implements Runnable {
         }
     }
 
-    private InetSocketAddress getDestAddress(SocketChannel localChannel) {
+    class getDestAddress_Result {
+        InetSocketAddress address ;
+        boolean needResetHost ;
+
+        getDestAddress_Result(InetSocketAddress address, boolean needResetHost) {
+            this.address = address;
+            this.needResetHost = needResetHost;
+        }
+    }
+    private getDestAddress_Result getDestAddress(SocketChannel localChannel) {
         short portKey = (short) localChannel.socket().getPort();
         //先session中找，如果找到说明是已经建立的连接
         NatSession session = NatSessionManager.getSession(portKey);
@@ -124,9 +133,9 @@ public class TcpProxyServer implements Runnable {
             //如果没有建立连接, 查找转发配置
             forwardConfigInetAddress fci = ForwardConfig.getInstance().getAddress(session.remoteIP, session.remotePort);
             if (fci != null) {
-                return new InetSocketAddress(fci.address, fci.port);
+                return new getDestAddress_Result(new InetSocketAddress(fci.address, fci.port), fci.needResetHost);
             }
-            return new InetSocketAddress(localChannel.socket().getInetAddress(), session.remotePort & 0xFFFF);
+            return new getDestAddress_Result(new InetSocketAddress(localChannel.socket().getInetAddress(), session.remotePort & 0xFFFF),false);
         }
         return null;
     }
@@ -138,14 +147,14 @@ public class TcpProxyServer implements Runnable {
             SocketChannel localChannel = mServerSocketChannel.accept();
             localTunnel = TunnelFactory.CreateLocalTunnel(vpnService, localChannel, mSelector);
             short portKey = (short) localChannel.socket().getPort();
-            InetSocketAddress destAddress = getDestAddress(localChannel);
-            if (destAddress != null) {
-                remoteTunnel = TunnelFactory.CreateRemoteTunnel(vpnService, destAddress, mSelector, portKey);
+            getDestAddress_Result result = getDestAddress(localChannel);
+            if (result != null) {
+                remoteTunnel = TunnelFactory.CreateRemoteTunnel(vpnService, result.address, mSelector, portKey, result.needResetHost);
                 //关联兄弟
                 remoteTunnel.setBrotherTunnel(localTunnel);
                 localTunnel.setBrotherTunnel(remoteTunnel);
                 //开始连接
-                remoteTunnel.connect(destAddress);
+                remoteTunnel.connect(result.address);
             }
         } catch (Exception ex) {
             DebugLog.e("TcpProxyServer onAccepted catch an exception: %s", ex);

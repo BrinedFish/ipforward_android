@@ -27,7 +27,12 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        checkAuth();
+        checkAuth(new Runnable() {
+            @Override
+            public void run() {
+                downloadCfg();
+            }
+        });
         vpnServiceHelper = new VpnServiceHelper(this);
         btn_start = findViewById(R.id.btn_1);
         editText_rule = findViewById(R.id.editText_rule);
@@ -37,8 +42,13 @@ public class MainActivity extends AppCompatActivity {
                 if(vpnServiceHelper.vpnRunningStatus()){
                     vpnServiceHelper.stopVpn();
                 }else {
-                    ForwardConfig.getInstance().init(((EditText)findViewById(R.id.editText_rule)).getText().toString());
-                    vpnServiceHelper.startVPN();
+                    checkAuth(new Runnable() {
+                        @Override
+                        public void run() {
+                            ForwardConfig.getInstance().init(((EditText)findViewById(R.id.editText_rule)).getText().toString());
+                            vpnServiceHelper.startVPN();
+                        }
+                    });
                 }
             }
         });
@@ -56,7 +66,7 @@ public class MainActivity extends AppCompatActivity {
         mHandler.postDelayed(r, 1000);
     }
 
-    private void checkAuth(){
+    private void checkAuth(final Runnable r){
         final AlertDialog loadingDialog = CreateLoadingDialog();
         Api.getSvrVersion(this, new ApiCallBack<ApiResult>() {
             @Override
@@ -89,7 +99,7 @@ public class MainActivity extends AppCompatActivity {
                                             }
                                         }).show();
                             }else{
-                                downloadCfg();
+                                r.run();
                             }
                         }
                     }
@@ -120,7 +130,12 @@ public class MainActivity extends AppCompatActivity {
                             public void run() {
                                 if (result.ok) {
                                     authDialog.dismiss();
-                                    checkAuth();
+                                    checkAuth(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            downloadCfg();
+                                        }
+                                    });
                                 }else{
                                     Toast.makeText(getApplicationContext(), result.msg, Toast.LENGTH_SHORT).show();
                                 }

@@ -183,6 +183,8 @@ public abstract class TcpTunnel implements KeyHandler {
     protected int write(ByteBuffer buffer) throws Exception {
         int byteSendSum = 0;
 
+        beforeSend(buffer);
+
         while (buffer.hasRemaining()) {
             int byteSent = mInnerChannel.write(buffer);
             byteSendSum += byteSent;

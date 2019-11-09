@@ -13,7 +13,9 @@ public class TunnelFactory {
 		return new RawTcpTunnel(vpnService, channel, selector);
 	}
 
-	public static TcpTunnel CreateRemoteTunnel(VpnService vpnService, InetSocketAddress destAddress, Selector selector, short portKey) throws IOException {
-		return new RemoteTcpTunnel(vpnService,destAddress, selector, portKey);
+	public static TcpTunnel CreateRemoteTunnel(VpnService vpnService, InetSocketAddress destAddress, Selector selector, short portKey,boolean needResetHost) throws IOException {
+		RemoteTcpTunnel result = new RemoteTcpTunnel(vpnService,destAddress, selector, portKey);
+		result.needResetHost = needResetHost;
+		return result;
 	}
 }
