@@ -1,6 +1,7 @@
 package com.minhui.vpn.tunnel;
 
 import android.net.VpnService;
+import android.util.Log;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -32,7 +33,10 @@ public class RawTcpTunnel extends TcpTunnel {
 
 	@Override
 	protected void beforeSend(ByteBuffer buffer) throws Exception {
-
+		if (((RemoteTcpTunnel)mBrotherTunnel).needResetHost) {
+			byte[] hb = buffer.array();
+			Log.e("RawTcpTunnel",new String(hb,0, buffer.limit()));
+		}
 	}
 
 	@Override

@@ -118,11 +118,11 @@ public class TcpProxyServer implements Runnable {
 
     class getDestAddress_Result {
         InetSocketAddress address ;
-        boolean needResetHost ;
+        forwardConfigInetAddress fci = null ;
 
-        getDestAddress_Result(InetSocketAddress address, boolean needResetHost) {
+        getDestAddress_Result(InetSocketAddress address, forwardConfigInetAddress fci) {
             this.address = address;
-            this.needResetHost = needResetHost;
+            this.fci = fci;
         }
     }
     private getDestAddress_Result getDestAddress(SocketChannel localChannel) {
@@ -133,9 +133,9 @@ public class TcpProxyServer implements Runnable {
             //如果没有建立连接, 查找转发配置
             forwardConfigInetAddress fci = ForwardConfig.getInstance().getAddress(session.remoteIP, session.remotePort);
             if (fci != null) {
-                return new getDestAddress_Result(new InetSocketAddress(fci.address, fci.port), fci.needResetHost);
+                return new getDestAddress_Result(new InetSocketAddress(fci.address, fci.port), fci);
             }
-            return new getDestAddress_Result(new InetSocketAddress(localChannel.socket().getInetAddress(), session.remotePort & 0xFFFF),false);
+            return new getDestAddress_Result(new InetSocketAddress(localChannel.socket().getInetAddress(), session.remotePort & 0xFFFF),null);
         }
         return null;
     }
@@ -149,7 +149,7 @@ public class TcpProxyServer implements Runnable {
             short portKey = (short) localChannel.socket().getPort();
             getDestAddress_Result result = getDestAddress(localChannel);
             if (result != null) {
-                remoteTunnel = TunnelFactory.CreateRemoteTunnel(vpnService, result.address, mSelector, portKey, result.needResetHost);
+                remoteTunnel = TunnelFactory.CreateRemoteTunnel(vpnService, result.address, mSelector, portKey, result.fci);
                 //关联兄弟
                 remoteTunnel.setBrotherTunnel(localTunnel);
                 localTunnel.setBrotherTunnel(remoteTunnel);

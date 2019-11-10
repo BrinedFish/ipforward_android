@@ -33,9 +33,9 @@ public abstract class TcpTunnel implements KeyHandler {
      * 一个负责Apps与TCP代理服务器的通信，一个负责TCP代理服务器与外网服务器的通信
      * Apps与外网服务器的数据交换靠这两个Tunnel来进行
      */
-    private TcpTunnel mBrotherTunnel;
+    protected TcpTunnel mBrotherTunnel;
     private boolean mDisposed;
-    private InetSocketAddress mServerEP;
+    protected InetSocketAddress mServerEP;
     short portKey;
     ConcurrentLinkedQueue<ByteBuffer> needWriteData = new ConcurrentLinkedQueue<>();
 
@@ -136,9 +136,8 @@ public abstract class TcpTunnel implements KeyHandler {
                 buffer.flip();
 
                 sendToBrother(key, buffer);
-
             } else if (bytesRead < 0) {
-
+                Thread.sleep(300);
                 this.dispose();
             }
         } catch (Exception ex) {
@@ -230,6 +229,7 @@ public abstract class TcpTunnel implements KeyHandler {
 
     void disposeInternal(boolean disposeBrother) {
         if (!mDisposed) {
+            mDisposed = true;
             try {
                 mInnerChannel.close();
             } catch (Exception ex) {
@@ -244,7 +244,6 @@ public abstract class TcpTunnel implements KeyHandler {
             mInnerChannel = null;
             mSelector = null;
             mBrotherTunnel = null;
-            mDisposed = true;
 
             onDispose();
             NatSessionManager.removeSession(portKey);

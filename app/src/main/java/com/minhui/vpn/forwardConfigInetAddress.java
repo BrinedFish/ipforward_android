@@ -9,6 +9,7 @@ public class forwardConfigInetAddress implements Serializable {
     public InetAddress address;
     public short port;
     public boolean needResetHost;
+    public boolean needEncryptProxy = true;
 
     forwardConfigInetAddress(int address, short port, boolean nrh) {
         this.address = CommonMethods.ipIntToInet4Address(address);

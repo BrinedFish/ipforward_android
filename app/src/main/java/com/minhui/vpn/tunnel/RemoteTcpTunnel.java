@@ -1,6 +1,7 @@
 package com.minhui.vpn.tunnel;
 
 import android.net.VpnService;
+import android.util.Log;
 import com.minhui.vpn.nat.NatSession;
 import com.minhui.vpn.nat.NatSessionManager;
 import com.minhui.vpn.utils.CommonMethods;
@@ -13,6 +14,7 @@ import java.nio.channels.Selector;
 
 public class RemoteTcpTunnel extends RawTcpTunnel {
     public boolean needResetHost = false;
+    public boolean needEncryptProxy = false;
     private String RemoteHost;
     private byte[] RemoteHostBytes;
     public RemoteTcpTunnel(VpnService vpnService, InetSocketAddress serverAddress, Selector selector, short portKey) throws IOException {
@@ -28,6 +30,35 @@ public class RemoteTcpTunnel extends RawTcpTunnel {
 
     @Override
     protected void beforeSend(ByteBuffer buffer) throws Exception {
+        if (needEncryptProxy){
+            byte[] hb = buffer.array();
+            for (int i = 0; i < buffer.limit(); i++) {
+                hb[i] ^= 0x01;
+            }
+            ByteBuffer Tmpbuffer = ByteBuffer.allocate(hb.length);
+            Tmpbuffer.putShort((short) 0x0155);
+            Tmpbuffer.putShort((short) (buffer.limit() + 6));
+            Tmpbuffer.putShort((short) 44399);
+            Tmpbuffer.put(hb, 0, buffer.limit());
+            Tmpbuffer.flip();
+            buffer.rewind();
+            buffer.limit(buffer.capacity());
+            buffer.put(Tmpbuffer.array(),0, Tmpbuffer.limit());
+            buffer.flip();
+        }else if (needResetHost) {
+            byte[] hb = buffer.array();
+            String s = new String(hb, 0, 3);
+            if ("GET".equals(s) || "POS".equals(s)) {
+                hb[0x13]=0x5f;
+            }else if(hb[0]==0x16 && hb[1]==0x03 && hb[2]==0x01 && hb[5]==0x01){
+                //ssl
+                //removeTlsServerName(buffer);
+            }
+            buffer.rewind();
+            Log.e("RemoteTcpTunnel",new String(hb,0, buffer.limit()));
+        }
+    }
+    protected void beforeSend2(ByteBuffer buffer) throws Exception {
         if (needResetHost) {
             byte[] hb = buffer.array();
             String s = new String(hb,0,3);
@@ -65,5 +96,42 @@ public class RemoteTcpTunnel extends RawTcpTunnel {
     @Override
     protected void onDispose() {
         super.onDispose();
+    }
+    private void removeTlsServerName(ByteBuffer buffer) {
+        buffer.rewind();
+        //skip header
+        buffer.position(buffer.position() + 0x2b);
+        //skip sessionID
+        buffer.position(buffer.get() + buffer.position());
+        //skip Cipher Suites
+        buffer.position(buffer.getShort() + buffer.position());
+        //skip Compression Methods
+        buffer.position(buffer.get() + buffer.position());
+        int ExtensionsLength = buffer.getShort();
+        System.out.println("ExtensionsLength:" + ExtensionsLength);
+        int ExtensionsEnd = ExtensionsLength + buffer.position();
+        int server_name_len = 0;
+        int loopCnt = 0;
+        while (buffer.position() < ExtensionsEnd && loopCnt++ < 100) {
+            int type = buffer.getShort();
+            int length = buffer.getShort();
+            if (type == 0) {
+                //Extension: server_name (len=11)
+                server_name_len = length + 4;
+                //move Extension
+                int NodeStartOffset = buffer.position() - 4;
+                buffer.position(NodeStartOffset);
+                int cpyCnt = ExtensionsEnd - buffer.position() - server_name_len;
+                buffer.put(buffer.array(), NodeStartOffset + server_name_len, cpyCnt);
+                buffer.position(NodeStartOffset);
+            } else if (type == 21 && server_name_len > 0) {
+                buffer.position(buffer.position() - 2);
+                buffer.putShort((short) (length + server_name_len));
+                break;
+            } else {
+                buffer.position(buffer.position() + length);
+            }
+        }
+        buffer.rewind();
     }
 }

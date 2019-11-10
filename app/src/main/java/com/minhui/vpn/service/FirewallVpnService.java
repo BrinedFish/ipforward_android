@@ -209,6 +209,7 @@ public class FirewallVpnService extends VpnService implements Runnable {
             ) {
                 session = NatSessionManager.createSession(portKey, ipHeader.getDestinationIP(), tcpHeader.getDestinationPort(), NatSession.TCP);
                 session.vpnStartTime = vpnStartTime;
+                System.out.println("=========create session=========="+session.toString());
             }
             session.lastRefreshTime = System.currentTimeMillis();
             session.packetSent++; //注意顺序
