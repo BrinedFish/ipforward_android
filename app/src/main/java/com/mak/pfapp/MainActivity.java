@@ -32,8 +32,7 @@ public class MainActivity extends AppCompatActivity {
     private Button btn_start;
     private EditText editText_rule;
     private VpnServiceHelper vpnServiceHelper;
-    // used by google ad
-    private RewardedAd rewardedAd;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -44,7 +43,7 @@ public class MainActivity extends AppCompatActivity {
             public void onInitializationComplete(InitializationStatus initializationStatus) {
             }
         });
-        rewardedAd = createAndLoadRewardedAd();
+        gad.reloadAd(this);
 
         checkAuth(new Runnable() {
             @Override
@@ -87,24 +86,7 @@ public class MainActivity extends AppCompatActivity {
         };
         mHandler.postDelayed(r, 1000);
     }
-    public RewardedAd createAndLoadRewardedAd() {
-        RewardedAd rewardedAd = new RewardedAd(this, "ca-app-pub-3940256099942544/5224354917");
-        RewardedAdLoadCallback adLoadCallback = new RewardedAdLoadCallback() {
-            @Override
-            public void onRewardedAdLoaded() {
-                // Ad successfully loaded.
-                Toast.makeText(getApplicationContext(), "Ad successfully loaded.", Toast.LENGTH_SHORT).show();
-            }
 
-            @Override
-            public void onRewardedAdFailedToLoad(int errorCode) {
-                // Ad failed to load.
-                Toast.makeText(getApplicationContext(), "Ad failed to load.", Toast.LENGTH_SHORT).show();
-            }
-        };
-        rewardedAd.loadAd(new AdRequest.Builder().build(), adLoadCallback);
-        return rewardedAd;
-    }
 
     private void guiLog(String msg){
         editText_rule.append(msg+"\r\n");
@@ -122,8 +104,10 @@ public class MainActivity extends AppCompatActivity {
                         if (!result.ok){
                             //认证失败
                             Toast.makeText(getApplicationContext(), result.msg, Toast.LENGTH_SHORT).show();
+                            guiLog(result.msg);
                             ShowAuthDlg();
                         }else{
+                            Api.Point = 0;
                             String svrVer = result.data.optString("version","");
                             if (!Api.sdkVersion.equals(svrVer)){
                                 final String updateUrl = result.data.optString("url","http://www.baidu.com/");
@@ -143,6 +127,7 @@ public class MainActivity extends AppCompatActivity {
                                             }
                                         }).show();
                             }else{
+                                Api.Point = result.data.optInt("point",0);
                                 r.run();
                             }
                         }
@@ -157,72 +142,46 @@ public class MainActivity extends AppCompatActivity {
         View dialogView = View.inflate(this, R.layout.activity_auth, null);
         builder.setView(dialogView) ;
         final AlertDialog authDialog = builder.create();
-        authDialog.setCanceledOnTouchOutside(false);
-        authDialog.setCancelable(false);
+//        authDialog.setCanceledOnTouchOutside(false);
+//        authDialog.setCancelable(false);
         authDialog.show();
         final EditText edt_auth_key = authDialog.findViewById(R.id.edt_auth_key);
         authDialog.findViewById(R.id.btn_ok).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (rewardedAd.isLoaded()) {
-                    RewardedAdCallback adCallback = new RewardedAdCallback() {
-                        @Override
-                        public void onRewardedAdOpened() {
-                            // Ad opened.
-                            Toast.makeText(getApplicationContext(), "Ad opened.", Toast.LENGTH_SHORT).show();
-                        }
-
-                        @Override
-                        public void onRewardedAdClosed() {
-                            // Ad closed.
-                            Toast.makeText(getApplicationContext(), " Ad closed.", Toast.LENGTH_SHORT).show();
-                            MainActivity.this.rewardedAd = createAndLoadRewardedAd();
-                        }
-
-                        @Override
-                        public void onUserEarnedReward(RewardItem reward) {
-                            // User earned reward.
-                            Toast.makeText(getApplicationContext(), "User earned reward.", Toast.LENGTH_SHORT).show();
-                        }
-
-                        @Override
-                        public void onRewardedAdFailedToShow(int errorCode) {
-                            // Ad failed to display
-                            Toast.makeText(getApplicationContext(), "Ad failed to display", Toast.LENGTH_SHORT).show();
-                        }
-                    };
-                    rewardedAd.show(MainActivity.this, adCallback);
-                } else {
-                    Toast.makeText(getApplicationContext(), " Ad not Loaded", Toast.LENGTH_SHORT).show();
-                }
-
-
-
-//                final AlertDialog loadingDialog = CreateLoadingDialog();
-//                Api.getAuth(MainActivity.this, new ApiCallBack<ApiResult>() {
-//                    @Override
-//                    public void run(final ApiResult result) {
-//                        loadingDialog.dismiss();
-//                        MainActivity.this.runOnUiThread(new Runnable() {
-//                            @Override
-//                            public void run() {
-//                                if (result.ok) {
-//                                    authDialog.dismiss();
-//                                    checkAuth(new Runnable() {
-//                                        @Override
-//                                        public void run() {
-//                                            downloadCfg();
-//                                        }
-//                                    });
-//                                }else{
-//                                    Toast.makeText(getApplicationContext(), result.msg, Toast.LENGTH_SHORT).show();
-//                                }
-//                            }
-//                        });
-//                    }
-//                }, edt_auth_key.getText().toString());
+                final AlertDialog loadingDialog = CreateLoadingDialog();
+                Api.getAuth(MainActivity.this, new ApiCallBack<ApiResult>() {
+                    @Override
+                    public void run(final ApiResult result) {
+                        loadingDialog.dismiss();
+                        MainActivity.this.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (result.ok) {
+                                    authDialog.dismiss();
+                                    checkAuth(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            downloadCfg();
+                                        }
+                                    });
+                                }else{
+                                    Toast.makeText(getApplicationContext(), result.msg, Toast.LENGTH_SHORT).show();
+                                }
+                            }
+                        });
+                    }
+                }, edt_auth_key.getText().toString());
             }
         });
+
+        authDialog.findViewById(R.id.btn_cancel).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                authDialog.dismiss();
+            }
+        });
+
     }
     private AlertDialog CreateLoadingDialog(){
          AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -282,6 +241,11 @@ public class MainActivity extends AppCompatActivity {
             Intent cfg = new Intent();
             cfg.setClass(MainActivity.this, cfgActivity.class);
             MainActivity.this.startActivity(cfg);
+            return true;
+        }else if (id == R.id.action_adr) {
+            Intent adr = new Intent();
+            adr.setClass(MainActivity.this, AdrActivity.class);
+            MainActivity.this.startActivity(adr);
             return true;
         }
 

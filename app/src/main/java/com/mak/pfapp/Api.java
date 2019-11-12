@@ -17,6 +17,7 @@ public class Api {
     public static final String sdkVersion = "1";
     private static String ApiSvrUrl = "";
     private static String userId = "";
+    public static int Point = 0;
 
     private static ExecutorService executor = null;
 

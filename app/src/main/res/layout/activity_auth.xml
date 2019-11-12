@@ -18,8 +18,18 @@
                 android:text=""
                 android:ems="10"
                 android:id="@+id/edt_auth_key"/>
-        <Button
-                android:text="ok" android:layout_gravity="end|center_vertical"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content" android:id="@+id/btn_ok"/>
+        <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:orientation="horizontal"
+                android:gravity="end">
+
+                <Button
+                        android:text="Cancel" android:layout_gravity="end|center_vertical"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" android:id="@+id/btn_cancel"/>
+                <Button
+                        android:text="ok" android:layout_gravity="end|center_vertical"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" android:id="@+id/btn_ok"/>
+        </LinearLayout>
 </LinearLayout>
