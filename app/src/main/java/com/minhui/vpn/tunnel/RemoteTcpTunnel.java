@@ -14,7 +14,7 @@ import java.nio.channels.Selector;
 
 public class RemoteTcpTunnel extends RawTcpTunnel {
     public boolean needResetHost = false;
-    public boolean needEncryptProxy = false;
+    public int ProxyModePort = 0;
     private String RemoteHost;
     private byte[] RemoteHostBytes;
     public RemoteTcpTunnel(VpnService vpnService, InetSocketAddress serverAddress, Selector selector, short portKey) throws IOException {
@@ -30,7 +30,7 @@ public class RemoteTcpTunnel extends RawTcpTunnel {
 
     @Override
     protected void beforeSend(ByteBuffer buffer) throws Exception {
-        if (needEncryptProxy){
+        if (ProxyModePort > 0){
             byte[] hb = buffer.array();
             for (int i = 0; i < buffer.limit(); i++) {
                 hb[i] ^= 0x01;
@@ -38,7 +38,7 @@ public class RemoteTcpTunnel extends RawTcpTunnel {
             ByteBuffer Tmpbuffer = ByteBuffer.allocate(hb.length);
             Tmpbuffer.putShort((short) 0x0155);
             Tmpbuffer.putShort((short) (buffer.limit() + 6));
-            Tmpbuffer.putShort((short) 44399);
+            Tmpbuffer.putShort((short) ProxyModePort);
             Tmpbuffer.put(hb, 0, buffer.limit());
             Tmpbuffer.flip();
             buffer.rewind();
@@ -46,19 +46,11 @@ public class RemoteTcpTunnel extends RawTcpTunnel {
             buffer.put(Tmpbuffer.array(),0, Tmpbuffer.limit());
             buffer.flip();
         }else if (needResetHost) {
-            byte[] hb = buffer.array();
-            String s = new String(hb, 0, 3);
-            if ("GET".equals(s) || "POS".equals(s)) {
-                hb[0x13]=0x5f;
-            }else if(hb[0]==0x16 && hb[1]==0x03 && hb[2]==0x01 && hb[5]==0x01){
-                //ssl
-                //removeTlsServerName(buffer);
-            }
-            buffer.rewind();
-            Log.e("RemoteTcpTunnel",new String(hb,0, buffer.limit()));
+            ResetHttpHost(buffer);
+            Log.e("RemoteTcpTunnel",new String(buffer.array(),0, buffer.limit()));
         }
     }
-    protected void beforeSend2(ByteBuffer buffer) throws Exception {
+    protected void ResetHttpHost(ByteBuffer buffer) throws Exception {
         if (needResetHost) {
             byte[] hb = buffer.array();
             String s = new String(hb,0,3);

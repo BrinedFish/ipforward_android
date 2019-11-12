@@ -18,7 +18,7 @@ public class TunnelFactory {
         RemoteTcpTunnel result = new RemoteTcpTunnel(vpnService, destAddress, selector, portKey);
         if (fci != null) {
             result.needResetHost = fci.needResetHost;
-            result.needEncryptProxy = fci.needEncryptProxy;
+            result.ProxyModePort = fci.ProxyModePort;
         }
         return result;
     }

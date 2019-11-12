@@ -4,13 +4,22 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
-import android.support.v7.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
 import android.os.Handler;
+import android.text.InputType;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.MobileAds;
+import com.google.android.gms.ads.initialization.InitializationStatus;
+import com.google.android.gms.ads.initialization.OnInitializationCompleteListener;
+import com.google.android.gms.ads.rewarded.RewardItem;
+import com.google.android.gms.ads.rewarded.RewardedAd;
+import com.google.android.gms.ads.rewarded.RewardedAdCallback;
+import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback;
 import com.minhui.vpn.ForwardConfig;
 import com.minhui.vpn.utils.VpnServiceHelper;
 import android.widget.Button;
@@ -23,10 +32,20 @@ public class MainActivity extends AppCompatActivity {
     private Button btn_start;
     private EditText editText_rule;
     private VpnServiceHelper vpnServiceHelper;
+    // used by google ad
+    private RewardedAd rewardedAd;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        MobileAds.initialize(this, new OnInitializationCompleteListener() {
+            @Override
+            public void onInitializationComplete(InitializationStatus initializationStatus) {
+            }
+        });
+        rewardedAd = createAndLoadRewardedAd();
+
         checkAuth(new Runnable() {
             @Override
             public void run() {
@@ -36,6 +55,8 @@ public class MainActivity extends AppCompatActivity {
         vpnServiceHelper = new VpnServiceHelper(this);
         btn_start = findViewById(R.id.btn_1);
         editText_rule = findViewById(R.id.editText_rule);
+        editText_rule.setInputType(InputType.TYPE_NULL);
+        editText_rule.setSingleLine(false);
         btn_start.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -45,8 +66,9 @@ public class MainActivity extends AppCompatActivity {
                     checkAuth(new Runnable() {
                         @Override
                         public void run() {
-                            ForwardConfig.getInstance().init(((EditText)findViewById(R.id.editText_rule)).getText().toString());
-                            vpnServiceHelper.startVPN();
+                            if(!vpnServiceHelper.startVPN()){
+                                guiLog("请重新连接...");
+                            }
                         }
                     });
                 }
@@ -64,6 +86,28 @@ public class MainActivity extends AppCompatActivity {
             }
         };
         mHandler.postDelayed(r, 1000);
+    }
+    public RewardedAd createAndLoadRewardedAd() {
+        RewardedAd rewardedAd = new RewardedAd(this, "ca-app-pub-3940256099942544/5224354917");
+        RewardedAdLoadCallback adLoadCallback = new RewardedAdLoadCallback() {
+            @Override
+            public void onRewardedAdLoaded() {
+                // Ad successfully loaded.
+                Toast.makeText(getApplicationContext(), "Ad successfully loaded.", Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onRewardedAdFailedToLoad(int errorCode) {
+                // Ad failed to load.
+                Toast.makeText(getApplicationContext(), "Ad failed to load.", Toast.LENGTH_SHORT).show();
+            }
+        };
+        rewardedAd.loadAd(new AdRequest.Builder().build(), adLoadCallback);
+        return rewardedAd;
+    }
+
+    private void guiLog(String msg){
+        editText_rule.append(msg+"\r\n");
     }
 
     private void checkAuth(final Runnable r){
@@ -120,29 +164,63 @@ public class MainActivity extends AppCompatActivity {
         authDialog.findViewById(R.id.btn_ok).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                final AlertDialog loadingDialog = CreateLoadingDialog();
-                Api.getAuth(MainActivity.this, new ApiCallBack<ApiResult>() {
-                    @Override
-                    public void run(final ApiResult result) {
-                        loadingDialog.dismiss();
-                        MainActivity.this.runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                if (result.ok) {
-                                    authDialog.dismiss();
-                                    checkAuth(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            downloadCfg();
-                                        }
-                                    });
-                                }else{
-                                    Toast.makeText(getApplicationContext(), result.msg, Toast.LENGTH_SHORT).show();
-                                }
-                            }
-                        });
-                    }
-                }, edt_auth_key.getText().toString());
+                if (rewardedAd.isLoaded()) {
+                    RewardedAdCallback adCallback = new RewardedAdCallback() {
+                        @Override
+                        public void onRewardedAdOpened() {
+                            // Ad opened.
+                            Toast.makeText(getApplicationContext(), "Ad opened.", Toast.LENGTH_SHORT).show();
+                        }
+
+                        @Override
+                        public void onRewardedAdClosed() {
+                            // Ad closed.
+                            Toast.makeText(getApplicationContext(), " Ad closed.", Toast.LENGTH_SHORT).show();
+                            MainActivity.this.rewardedAd = createAndLoadRewardedAd();
+                        }
+
+                        @Override
+                        public void onUserEarnedReward(RewardItem reward) {
+                            // User earned reward.
+                            Toast.makeText(getApplicationContext(), "User earned reward.", Toast.LENGTH_SHORT).show();
+                        }
+
+                        @Override
+                        public void onRewardedAdFailedToShow(int errorCode) {
+                            // Ad failed to display
+                            Toast.makeText(getApplicationContext(), "Ad failed to display", Toast.LENGTH_SHORT).show();
+                        }
+                    };
+                    rewardedAd.show(MainActivity.this, adCallback);
+                } else {
+                    Toast.makeText(getApplicationContext(), " Ad not Loaded", Toast.LENGTH_SHORT).show();
+                }
+
+
+
+//                final AlertDialog loadingDialog = CreateLoadingDialog();
+//                Api.getAuth(MainActivity.this, new ApiCallBack<ApiResult>() {
+//                    @Override
+//                    public void run(final ApiResult result) {
+//                        loadingDialog.dismiss();
+//                        MainActivity.this.runOnUiThread(new Runnable() {
+//                            @Override
+//                            public void run() {
+//                                if (result.ok) {
+//                                    authDialog.dismiss();
+//                                    checkAuth(new Runnable() {
+//                                        @Override
+//                                        public void run() {
+//                                            downloadCfg();
+//                                        }
+//                                    });
+//                                }else{
+//                                    Toast.makeText(getApplicationContext(), result.msg, Toast.LENGTH_SHORT).show();
+//                                }
+//                            }
+//                        });
+//                    }
+//                }, edt_auth_key.getText().toString());
             }
         });
     }
@@ -168,11 +246,11 @@ public class MainActivity extends AppCompatActivity {
                         String msg;
                         if (result.ok){
                             try {
-                                editText_rule.setText("");
                                 JSONArray data = result.data.getJSONArray("list");
-                                for (int i = 0; i < data.length(); i++) {
-                                    editText_rule.append(data.get(i)+"\r\n");
-                                }
+                                guiLog(data.toString());
+                                guiLog("下载规则："+data.length());
+                                ForwardConfig.getInstance().init(data);
+                                guiLog("应用规则："+ForwardConfig.getInstance().length());
                                 msg = "ok";
                             } catch (JSONException e) {
                                 msg = e.getMessage();

@@ -184,7 +184,7 @@ public class FirewallVpnService extends VpnService implements Runnable {
         //矫正TCPHeader里的偏移量，使它指向TCP包地址
         tcpHeader.mOffset = ipHeader.getHeaderLength();
         if (tcpHeader.getSourcePort() == mTcpProxyServer.port) {
-            DebugLog.dWithTag(TAG, "process  tcp packet from net ");
+            //DebugLog.dWithTag(TAG, "process  tcp packet from net ");
             NatSession session = NatSessionManager.getSession(tcpHeader.getDestinationPort());
             if (session != null) {
                 ipHeader.setSourceIP(ipHeader.getDestinationIP());
@@ -199,7 +199,7 @@ public class FirewallVpnService extends VpnService implements Runnable {
             }
 
         } else {
-            DebugLog.dWithTag(TAG, "process  tcp packet to net ");
+            //DebugLog.dWithTag(TAG, "process  tcp packet to net ");
             //添加端口映射
             short portKey = tcpHeader.getSourcePort();
             NatSession session = NatSessionManager.getSession(portKey);

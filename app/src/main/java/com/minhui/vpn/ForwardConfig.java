@@ -28,14 +28,14 @@ public class ForwardConfig {
         return getAddress(key);
     }
 
-    public void init(String cfgData)
+    public void init(JSONArray cfgData)
     {
         forwardTable.clear();
-        for (String aLine : cfgData.split("\\n")) {
-            if (aLine.startsWith("//")) continue;
-            String[] aForwardData = aLine.replace(" ","").trim().split("=");
-            if (aForwardData.length == 2) {
-                try {
+        for (int i = 0; i < cfgData.length(); i++) {
+            try {
+                JSONObject aObj = (JSONObject)cfgData.get(i);
+                String[] aForwardData = aObj.optString("data","").replace(" ","").trim().split("=");
+                if (aForwardData.length == 2) {
                     String[] fromData = aForwardData[0].split(":");
                     if (fromData.length != 2) continue;
                     int fromIp = CommonMethods.ipStringToInt(fromData[0]);
@@ -47,11 +47,13 @@ public class ForwardConfig {
                     short toPort = Short.parseShort(toData[1]);
 
                     long key = ((long)fromIp << 32) | fromPort;
-                    forwardTable.put(key, new forwardConfigInetAddress(toIp, toPort, true));
-                } catch (Exception ex) {
+                    forwardTable.put(key, new forwardConfigInetAddress(toIp, toPort, aObj.optBoolean("nrh"), aObj.optInt("pm",0)));
                 }
-            }
+            } catch (Exception ignored) { }
         }
+    }
+    public int length(){
+        return forwardTable.size();
     }
 
 }

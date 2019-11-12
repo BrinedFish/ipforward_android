@@ -43,14 +43,16 @@ public class VpnServiceHelper {
         //context.stopService(new Intent(context, FirewallVpnService.class));
     }
 
-    public void startVPN() {
+    public boolean startVPN() {
         Intent intent = FirewallVpnService.prepare(activity);
         if (intent == null) {
             Intent bindIntent = new Intent(activity, FirewallVpnService.class);
             activity.bindService(bindIntent, mServiceConnection, BIND_AUTO_CREATE);
             //context.startService(bindIntent);
+            return true;
         } else {
             activity.startActivityForResult(intent, START_VPN_SERVICE_REQUEST_CODE);
+            return false;
         }
     }
 
