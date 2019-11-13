@@ -14,4 +14,8 @@
           android:title="Adr"
           android:orderInCategory="100"
           app:showAsAction="never"/>
+    <item android:id="@+id/action_wbv"
+          android:title="Web"
+          android:orderInCategory="100"
+          app:showAsAction="never"/>
 </menu>

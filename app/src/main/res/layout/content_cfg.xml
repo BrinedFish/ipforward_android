@@ -10,7 +10,7 @@
         android:orientation="vertical" android:background="#CCC"
         tools:context=".cfgActivity">
 
-    <RelativeLayout android:visibility="gone"
+    <RelativeLayout
             android:layout_width="match_parent" android:background="#FFF" android:layout_marginBottom="2dp"
             android:layout_height="48dp">
         <TextView

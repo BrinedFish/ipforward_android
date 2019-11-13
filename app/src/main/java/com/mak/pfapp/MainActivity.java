@@ -16,7 +16,9 @@ import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.ads.initialization.InitializationStatus;
 import com.google.android.gms.ads.initialization.OnInitializationCompleteListener;
-import com.google.android.gms.ads.rewarded.RewardItem;
+import com.google.android.gms.ads.reward.RewardItem;
+import com.google.android.gms.ads.reward.RewardedVideoAd;
+import com.google.android.gms.ads.reward.RewardedVideoAdListener;
 import com.google.android.gms.ads.rewarded.RewardedAd;
 import com.google.android.gms.ads.rewarded.RewardedAdCallback;
 import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback;
@@ -32,12 +34,64 @@ public class MainActivity extends AppCompatActivity {
     private Button btn_start;
     private EditText editText_rule;
     private VpnServiceHelper vpnServiceHelper;
+//    private RewardedVideoAd mRewardedVideoAd;
+//
+//    private void loadRewardedVideoAd() {
+//        mRewardedVideoAd.loadAd("ca-app-pub-5930562548810475/2706192227",
+//                new AdRequest.Builder().build());
+//    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+//        MobileAds.initialize(this, "ca-app-pub-5930562548810475~1424900144");
+//        // Use an activity context to get the rewarded video instance.
+//        mRewardedVideoAd = MobileAds.getRewardedVideoAdInstance(this);
+//        mRewardedVideoAd.setRewardedVideoAdListener(new RewardedVideoAdListener() {
+//            @Override
+//            public void onRewardedVideoAdLoaded() {
+//
+//            }
+//
+//            @Override
+//            public void onRewardedVideoAdOpened() {
+//
+//            }
+//
+//            @Override
+//            public void onRewardedVideoStarted() {
+//
+//            }
+//
+//            @Override
+//            public void onRewardedVideoAdClosed() {
+//                loadRewardedVideoAd();
+//            }
+//
+//            @Override
+//            public void onRewarded(RewardItem rewardItem) {
+//                System.out.println("-----------------------------onRewarded------------------------------------");
+//            }
+//
+//            @Override
+//            public void onRewardedVideoAdLeftApplication() {
+//
+//            }
+//
+//            @Override
+//            public void onRewardedVideoAdFailedToLoad(int i) {
+//
+//            }
+//
+//            @Override
+//            public void onRewardedVideoCompleted() {
+//
+//            }
+//        });
+//
+//        loadRewardedVideoAd();
         MobileAds.initialize(this, new OnInitializationCompleteListener() {
             @Override
             public void onInitializationComplete(InitializationStatus initializationStatus) {
@@ -235,6 +289,9 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         if (id == R.id.down_cfg) {
+//            if (mRewardedVideoAd.isLoaded()) {
+//                mRewardedVideoAd.show();
+//            }
             downloadCfg();
             return true;
         } else if (id == R.id.action_settings) {
@@ -243,14 +300,22 @@ public class MainActivity extends AppCompatActivity {
             MainActivity.this.startActivity(cfg);
             return true;
         }else if (id == R.id.action_adr) {
-            Intent adr = new Intent();
-            adr.setClass(MainActivity.this, AdrActivity.class);
-            MainActivity.this.startActivity(adr);
+            MainActivity.this.checkAuth(new Runnable() {
+                @Override
+                public void run() {
+                    Intent adr = new Intent();
+                    adr.setClass(MainActivity.this, AdrActivity.class);
+                    MainActivity.this.startActivity(adr);
+                }
+            });
+            return true;
+        } else if (id == R.id.action_wbv) {
+            Intent cfg = new Intent();
+            cfg.setClass(MainActivity.this, WebviewActivity.class);
+            MainActivity.this.startActivity(cfg);
             return true;
         }
-
         return super.onOptionsItemSelected(item);
     }
-
 
 }

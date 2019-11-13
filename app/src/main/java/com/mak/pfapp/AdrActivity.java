@@ -1,6 +1,7 @@
 package com.mak.pfapp;
 
 import android.os.Bundle;
+import android.widget.TextView;
 import android.widget.Toast;
 import com.google.android.gms.ads.rewarded.RewardItem;
 import com.google.android.gms.ads.rewarded.RewardedAdCallback;
@@ -11,7 +12,7 @@ import androidx.appcompat.widget.Toolbar;
 import android.view.View;
 
 public class AdrActivity extends AppCompatActivity {
-
+    TextView label_point;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -59,7 +60,14 @@ public class AdrActivity extends AppCompatActivity {
                 }
             }
         });
-
+        label_point = findViewById(R.id.lbl_point);
+        label_point.setText(""+Api.Point);
+        label_point.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Toast.makeText(getApplicationContext(), " Point :" +label_point.getText(), Toast.LENGTH_SHORT).show();
+            }
+        });
 
     }
 
