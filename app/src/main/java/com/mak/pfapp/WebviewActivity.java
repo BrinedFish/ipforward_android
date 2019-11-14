@@ -64,13 +64,14 @@ public class WebviewActivity extends AppCompatActivity {
                 return true;
             }
         });
-        mainWbv.loadUrl("http://www.baidu.com/");
+        mainWbv.loadUrl(Api.ViewPageUrl);
     }
     private void loadUrl(String url) {
         if (url.startsWith("baidu")){
             return;
         }
         HashMap<String, String> hashMap = new HashMap<>();
+        hashMap.put("x-auth", Api.ViewPageUrlAuth);
         //自定义请求头
         mainWbv.loadUrl(url, hashMap);
     }

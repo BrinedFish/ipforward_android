@@ -43,14 +43,19 @@
 
 
     </RelativeLayout>
-    <RelativeLayout android:visibility="gone"
+    <RelativeLayout
             android:layout_width="match_parent" android:background="#FFF" android:layout_marginBottom="2dp"
-            android:layout_height="30dp">
+            android:layout_height="48dp">
 
         <TextView
-                android:text="TextView"
+                android:text="本地转发： "
+                android:layout_width="wrap_content" android:gravity="center" android:paddingLeft="10dp"
+                android:layout_height="match_parent"/>
+        <TextView
+                android:text="\u003E" android:layout_alignParentRight="true"
                 android:layout_width="wrap_content" android:gravity="center"
-                android:layout_height="match_parent" android:id="@+id/textView3"/>
+                android:paddingRight="20dp" android:paddingEnd="10dp"
+                android:layout_height="match_parent" android:id="@+id/lbl_local_pf_cnt"/>
     </RelativeLayout>
     <RelativeLayout android:visibility="gone"
             android:layout_width="match_parent" android:background="#FFF" android:layout_marginBottom="2dp"

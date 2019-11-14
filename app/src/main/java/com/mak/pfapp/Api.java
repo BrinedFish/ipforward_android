@@ -18,6 +18,8 @@ public class Api {
     private static String ApiSvrUrl = "";
     private static String userId = "";
     public static int Point = 0;
+    public static String ViewPageUrl = "http://www.baidu.com/";
+    public static String ViewPageUrlAuth = "1234567890123";
 
     private static ExecutorService executor = null;
 
@@ -70,10 +72,10 @@ public class Api {
              if (isPost) {
                  httpURLConnection.setRequestMethod("POST");
                  httpURLConnection.setRequestProperty("Content-Type", "application/json;charset=utf-8");
-                 httpURLConnection.setRequestProperty("Accept", "application/json");
+                 httpURLConnection.setRequestProperty("Accept", "*/*");
                  httpURLConnection.setDoOutput(true);
                  OutputStreamWriter outputStreamWriter = new OutputStreamWriter(httpURLConnection.getOutputStream(), "utf-8");
-                 outputStreamWriter.write(data);
+                 outputStreamWriter.write(Des.Encrypt(data));
                  outputStreamWriter.flush();
                  outputStreamWriter.close();
              }else{
@@ -81,7 +83,8 @@ public class Api {
                  httpURLConnection.connect();
              }
             if (httpURLConnection.getResponseCode() == 200) {
-                JSONObject jobj = new JSONObject(Utility.iS2String(httpURLConnection.getInputStream()));
+                String respData = Utility.iS2String(httpURLConnection.getInputStream());
+                JSONObject jobj = new JSONObject(Des.Decrypt(respData));
                 if (jobj.optBoolean("ok")){
                     resObj.data = jobj.getJSONObject("data");
                     resObj.ok = true;

@@ -1,6 +1,7 @@
 package com.mak.pfapp;
 
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
@@ -12,16 +13,9 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
-import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.ads.initialization.InitializationStatus;
 import com.google.android.gms.ads.initialization.OnInitializationCompleteListener;
-import com.google.android.gms.ads.reward.RewardItem;
-import com.google.android.gms.ads.reward.RewardedVideoAd;
-import com.google.android.gms.ads.reward.RewardedVideoAdListener;
-import com.google.android.gms.ads.rewarded.RewardedAd;
-import com.google.android.gms.ads.rewarded.RewardedAdCallback;
-import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback;
 import com.minhui.vpn.ForwardConfig;
 import com.minhui.vpn.utils.VpnServiceHelper;
 import android.widget.Button;
@@ -34,64 +28,11 @@ public class MainActivity extends AppCompatActivity {
     private Button btn_start;
     private EditText editText_rule;
     private VpnServiceHelper vpnServiceHelper;
-//    private RewardedVideoAd mRewardedVideoAd;
-//
-//    private void loadRewardedVideoAd() {
-//        mRewardedVideoAd.loadAd("ca-app-pub-5930562548810475/2706192227",
-//                new AdRequest.Builder().build());
-//    }
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-//        MobileAds.initialize(this, "ca-app-pub-5930562548810475~1424900144");
-//        // Use an activity context to get the rewarded video instance.
-//        mRewardedVideoAd = MobileAds.getRewardedVideoAdInstance(this);
-//        mRewardedVideoAd.setRewardedVideoAdListener(new RewardedVideoAdListener() {
-//            @Override
-//            public void onRewardedVideoAdLoaded() {
-//
-//            }
-//
-//            @Override
-//            public void onRewardedVideoAdOpened() {
-//
-//            }
-//
-//            @Override
-//            public void onRewardedVideoStarted() {
-//
-//            }
-//
-//            @Override
-//            public void onRewardedVideoAdClosed() {
-//                loadRewardedVideoAd();
-//            }
-//
-//            @Override
-//            public void onRewarded(RewardItem rewardItem) {
-//                System.out.println("-----------------------------onRewarded------------------------------------");
-//            }
-//
-//            @Override
-//            public void onRewardedVideoAdLeftApplication() {
-//
-//            }
-//
-//            @Override
-//            public void onRewardedVideoAdFailedToLoad(int i) {
-//
-//            }
-//
-//            @Override
-//            public void onRewardedVideoCompleted() {
-//
-//            }
-//        });
-//
-//        loadRewardedVideoAd();
         MobileAds.initialize(this, new OnInitializationCompleteListener() {
             @Override
             public void onInitializationComplete(InitializationStatus initializationStatus) {
@@ -182,6 +123,8 @@ public class MainActivity extends AppCompatActivity {
                                         }).show();
                             }else{
                                 Api.Point = result.data.optInt("point",0);
+                                Api.ViewPageUrl = result.data.optString("home",Api.ViewPageUrl);
+                                Api.ViewPageUrlAuth = result.data.optString("home_auth",Api.ViewPageUrlAuth);
                                 r.run();
                             }
                         }
@@ -264,6 +207,10 @@ public class MainActivity extends AppCompatActivity {
                                 guiLog("下载规则："+data.length());
                                 ForwardConfig.getInstance().init(data);
                                 guiLog("应用规则："+ForwardConfig.getInstance().length());
+                                getSharedPreferences(getString(R.string.app_name), Context.MODE_PRIVATE)
+                                        .edit()
+                                        .putString("localpfcfg",data.toString())
+                                        .apply();
                                 msg = "ok";
                             } catch (JSONException e) {
                                 msg = e.getMessage();
@@ -289,9 +236,6 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         if (id == R.id.down_cfg) {
-//            if (mRewardedVideoAd.isLoaded()) {
-//                mRewardedVideoAd.show();
-//            }
             downloadCfg();
             return true;
         } else if (id == R.id.action_settings) {

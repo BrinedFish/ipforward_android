@@ -36,6 +36,13 @@
                 android:theme="@style/AppTheme.NoActionBar">
         </activity>
 
+        <activity
+                android:name=".LocalPfCfgActivity"
+                android:label="本地转发设置"
+                android:parentActivityName=".MainActivity"
+                android:theme="@style/AppTheme.NoActionBar">
+        </activity>
+
         <service
                 android:name="com.minhui.vpn.service.FirewallVpnService"
                 android:enabled="true"
