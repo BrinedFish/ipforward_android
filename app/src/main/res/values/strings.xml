@@ -6,4 +6,6 @@
     <string name="text_update">need update</string>
     <string name="text_update_title">update</string>
     <string name="title_activity_adr">Adr</string>
+    <string name="Cancel">Cancel</string>
+    <string name="Ok">Ok</string>
 </resources>

@@ -36,7 +36,7 @@ public class UDPServer implements Runnable {
 
             });
 
-
+    public Object selectorLocker=new Object();
     public void start() {
         Thread thread = new Thread(this, "UDPServer");
         thread.start();
@@ -102,6 +102,7 @@ public class UDPServer implements Runnable {
     public void run() {
         try {
             while (true) {
+                synchronized(selectorLocker){}
                 int select = selector.select();
                 if (select == 0) {
                     Thread.sleep(5);

@@ -4,6 +4,7 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
@@ -57,14 +58,17 @@ public class MainActivity extends AppCompatActivity {
                 if(vpnServiceHelper.vpnRunningStatus()){
                     vpnServiceHelper.stopVpn();
                 }else {
-                    checkAuth(new Runnable() {
-                        @Override
-                        public void run() {
-                            if(!vpnServiceHelper.startVPN()){
-                                guiLog("请重新连接...");
-                            }
-                        }
-                    });
+                    ForwardConfig.getInstance().Reset();
+                    ForwardConfig.getInstance().Append(Api.PfData);
+                    try {
+                        SharedPreferences sp = getSharedPreferences(getString(R.string.app_name), Context.MODE_PRIVATE);
+                        JSONArray cfg_data = new JSONArray(sp.getString("localpfcfg","[]"));
+                        ForwardConfig.getInstance().Append(cfg_data);
+                    } catch (JSONException e) { }
+                    guiLog("应用规则：" + ForwardConfig.getInstance().length());
+                    if(!vpnServiceHelper.startVPN()){
+                        guiLog("请重新连接...");
+                    }
                 }
             }
         });
@@ -203,14 +207,8 @@ public class MainActivity extends AppCompatActivity {
                         if (result.ok){
                             try {
                                 JSONArray data = result.data.getJSONArray("list");
-                                guiLog(data.toString());
                                 guiLog("下载规则："+data.length());
-                                ForwardConfig.getInstance().init(data);
-                                guiLog("应用规则："+ForwardConfig.getInstance().length());
-                                getSharedPreferences(getString(R.string.app_name), Context.MODE_PRIVATE)
-                                        .edit()
-                                        .putString("localpfcfg",data.toString())
-                                        .apply();
+                                Api.PfData = data;
                                 msg = "ok";
                             } catch (JSONException e) {
                                 msg = e.getMessage();

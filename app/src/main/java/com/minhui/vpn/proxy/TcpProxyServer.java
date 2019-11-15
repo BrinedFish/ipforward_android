@@ -23,6 +23,7 @@ public class TcpProxyServer implements Runnable {
     public short port;
     private VpnService vpnService;
     Selector mSelector;
+    public Object selectorLocker=new Object();
     ServerSocketChannel mServerSocketChannel;
     Thread mServerThread;
 
@@ -78,6 +79,7 @@ public class TcpProxyServer implements Runnable {
     public void run() {
         try {
             while (!this.Stopped) {
+                synchronized(selectorLocker){}
                 int select = mSelector.select();
                 if (select == 0) {
                     Thread.sleep(5);
@@ -133,7 +135,7 @@ public class TcpProxyServer implements Runnable {
             //如果没有建立连接, 查找转发配置
             forwardConfigInetAddress fci = ForwardConfig.getInstance().getAddress(session.remoteIP, session.remotePort);
             if (fci != null) {
-                return new getDestAddress_Result(new InetSocketAddress(fci.address, fci.port), fci);
+                return new getDestAddress_Result(new InetSocketAddress(fci.address, fci.port & 0xFFFF), fci);
             }
             return new getDestAddress_Result(new InetSocketAddress(localChannel.socket().getInetAddress(), session.remotePort & 0xFFFF),null);
         }

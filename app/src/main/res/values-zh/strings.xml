@@ -6,4 +6,6 @@
     <string name="text_update">需要更新</string>
     <string name="text_update_title">更新</string>
     <string name="title_activity_adr">Adr</string>
+    <string name="Cancel">取消</string>
+    <string name="Ok">确认</string>
 </resources>

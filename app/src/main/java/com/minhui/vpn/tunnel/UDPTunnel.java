@@ -128,9 +128,11 @@ public class UDPTunnel implements KeyHandler {
             vpnService.protect(channel.socket());
             channel.configureBlocking(false);
             channel.connect(new InetSocketAddress(destinationAddress, destinationPort));
-            selector.wakeup();
-            selectionKey = channel.register(selector,
-                    SelectionKey.OP_READ, this);
+            synchronized(vpnServer.selectorLocker) {
+                selector.wakeup();
+                selectionKey = channel.register(selector,
+                        SelectionKey.OP_READ, this);
+            }
         } catch (IOException e) {
             SocketUtils.closeResources(channel);
             return;

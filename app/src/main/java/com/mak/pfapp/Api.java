@@ -3,7 +3,7 @@ package com.mak.pfapp;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.text.TextUtils;
-import okio.Timeout;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.OutputStreamWriter;
@@ -20,6 +20,7 @@ public class Api {
     public static int Point = 0;
     public static String ViewPageUrl = "http://www.baidu.com/";
     public static String ViewPageUrlAuth = "1234567890123";
+    public static JSONArray PfData =  new JSONArray();
 
     private static ExecutorService executor = null;
 

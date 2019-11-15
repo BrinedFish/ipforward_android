@@ -1,7 +1,9 @@
 package com.mak.pfapp;
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -22,6 +24,7 @@ import java.util.List;
 public class LocalPfCfgActivity extends AppCompatActivity {
     SharedPreferences sp;
     JSONArray cfg_data;
+    ListView listView;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -47,7 +50,44 @@ public class LocalPfCfgActivity extends AppCompatActivity {
         } catch (JSONException e) {
             e.printStackTrace();
         }
-
+        listView = findViewById(R.id.lv_lpc);
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                showEditor(position);
+            }
+        });
+        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener(){
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, final int position, long id) {
+                try {
+                    final JSONObject aRow = (JSONObject)cfg_data.get(position);
+                    AlertDialog.Builder builder = new AlertDialog.Builder(LocalPfCfgActivity.this);
+                    builder.setMessage("确认删除？\r\n"+aRow.optString("data", ""))
+                            .setTitle("提示")
+                            .setPositiveButton(getText(R.string.Ok), new DialogInterface.OnClickListener(){
+                                @Override
+                                public void onClick(DialogInterface dlg, int paramInt) {
+                                    //Toast.makeText(LocalPfCfgActivity.this,aRow.optString("data", ""), Toast.LENGTH_SHORT).show();
+                                    cfg_data.remove(position);
+                                    sp.edit().putString("localpfcfg", cfg_data.toString()).apply();
+                                    refreshLvData();
+                                    dlg.dismiss();
+                                }
+                            })
+                            .setNegativeButton(getText(R.string.Cancel), new DialogInterface.OnClickListener(){
+                                @Override
+                                public void onClick(DialogInterface dlg, int paramInt) {
+                                    dlg.dismiss();
+                                }
+                            })
+                            .show();
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+                return true;
+            }
+        });
         refreshLvData();
     }
     private void showEditor(final int objIdx){
@@ -99,23 +139,8 @@ public class LocalPfCfgActivity extends AppCompatActivity {
                 e.printStackTrace();
             }
         }
-        cfgLvAdapter adapter =new cfgLvAdapter(this,R.layout.pf_cfg_item, oo);
-        ListView listView = findViewById(R.id.lv_lpc);
+        cfgLvAdapter adapter = new cfgLvAdapter(this,R.layout.pf_cfg_item, oo);
         listView.setAdapter(adapter);
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                showEditor(position);
-            }
-        });
-        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener(){
-            @Override
-            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-                JSONObject aRow =oo.get(position);
-                Toast.makeText(LocalPfCfgActivity.this,aRow.optString("data", ""), Toast.LENGTH_SHORT).show();
-                return true;
-            }
-        });
     }
 
     class cfgLvAdapter extends ArrayAdapter<JSONObject> {
