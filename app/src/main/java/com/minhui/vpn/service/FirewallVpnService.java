@@ -17,7 +17,6 @@ import com.minhui.vpn.tcpip.UDPHeader;
 import com.minhui.vpn.utils.CommonMethods;
 import com.minhui.vpn.utils.DebugLog;
 import com.minhui.vpn.utils.TimeFormatUtil;
-import com.minhui.vpn.utils.VpnServiceHelper;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -155,11 +154,35 @@ public class FirewallVpnService extends VpnService implements Runnable {
         }
         return hasWrite;
     }
-
+    private String getDomainFromDnsPacket(byte[] data) {
+        try {
+            ByteBuffer domainBuffer = ByteBuffer.allocate(100);
+            int idx = 12;
+            for (int i = 0; i < 10; i++) {
+                int labelLen = data[idx];
+                if (labelLen == 0) {
+                    break;
+                }
+                if (idx > 12) domainBuffer.put((byte) 0x2e);
+                domainBuffer.put(data, idx + 1, labelLen);
+                idx += labelLen + 1;
+            }
+            idx += 2;
+            if (data[idx] == 1 && domainBuffer.position() > 0) {
+                //Type: A (Host Address) (1)
+                return new String(domainBuffer.array(), 0, domainBuffer.position());
+            }
+        }catch (Exception ignored){}
+        return null;
+    }
     private void onUdpPacketReceived(IPHeader ipHeader, int size) throws UnknownHostException {
         TCPHeader tcpHeader = mTCPHeader;
         short portKey = tcpHeader.getSourcePort();
+        if ((ipHeader.getDestinationIP() & 0xffff) == 53) {
+            //dns
+            String QueryDomain = getDomainFromDnsPacket(ipHeader.mData);
 
+        }
 
         NatSession session = NatSessionManager.getSession(portKey);
         if (session == null || session.remoteIP != ipHeader.getDestinationIP() || session.remotePort
@@ -290,7 +313,7 @@ public class FirewallVpnService extends VpnService implements Runnable {
             udpServer = new UDPServer(this, udpQueue);
             udpServer.start();
             NatSessionManager.clearAllSession();
-            DebugLog.i("DnsProxy started.\n");
+            DebugLog.i("tcp，udp started.\n");
             while (IsRunning) {
                 runVPN();
             }

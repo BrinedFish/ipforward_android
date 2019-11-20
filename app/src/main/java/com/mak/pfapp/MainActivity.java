@@ -58,14 +58,14 @@ public class MainActivity extends AppCompatActivity {
                 if(vpnServiceHelper.vpnRunningStatus()){
                     vpnServiceHelper.stopVpn();
                 }else {
-                    ForwardConfig.getInstance().Reset();
-                    ForwardConfig.getInstance().Append(Api.PfData);
+                    ForwardConfig.getInstance().ResetForwardTable();
+                    ForwardConfig.getInstance().AppendForwardTable(Api.PfData);
                     try {
                         SharedPreferences sp = getSharedPreferences(getString(R.string.app_name), Context.MODE_PRIVATE);
                         JSONArray cfg_data = new JSONArray(sp.getString("localpfcfg","[]"));
-                        ForwardConfig.getInstance().Append(cfg_data);
+                        ForwardConfig.getInstance().AppendForwardTable(cfg_data);
                     } catch (JSONException e) { }
-                    guiLog("应用规则：" + ForwardConfig.getInstance().length());
+                    guiLog("应用规则：" + ForwardConfig.getInstance().lengthOfForwardTable());
                     if(!vpnServiceHelper.startVPN()){
                         guiLog("请重新连接...");
                     }

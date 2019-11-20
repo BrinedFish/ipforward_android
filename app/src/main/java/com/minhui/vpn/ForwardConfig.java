@@ -10,6 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ForwardConfig {
     private static ForwardConfig instance;
     private final ConcurrentHashMap<Long, forwardConfigInetAddress> forwardTable = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Integer> dnsTable = new ConcurrentHashMap<>();
 
     private ForwardConfig(){ }
 
@@ -27,10 +28,10 @@ public class ForwardConfig {
         long key = ((long)ip << 24) | port;
         return getAddress(key);
     }
-    public void Reset(){
+    public void ResetForwardTable(){
         forwardTable.clear();
     }
-    public void Append(JSONArray cfgData)
+    public void AppendForwardTable(JSONArray cfgData)
     {
         for (int i = 0; i < cfgData.length(); i++) {
             try {
@@ -53,8 +54,26 @@ public class ForwardConfig {
             } catch (Exception ignored) { }
         }
     }
-    public int length(){
+    public int lengthOfForwardTable(){
         return forwardTable.size();
     }
 
+    public void AppendDnsTable(JSONArray cfgData){
+        for (int i = 0; i < cfgData.length(); i++) {
+            try {
+                JSONObject aObj = (JSONObject) cfgData.get(i);
+                String[] aForwardData = aObj.optString("data","").replace(" ","").trim().split("=");
+                if (aForwardData.length == 2) {
+                    int Ip = CommonMethods.ipStringToInt(aForwardData[1]);
+                    dnsTable.put(aForwardData[0], Ip);
+                }
+            } catch (Exception ignored) { }
+        }
+    }
+    public void ResetDnsTable(){
+        dnsTable.clear();
+    }
+    public int lengthOfDnsTable(){
+        return dnsTable.size();
+    }
 }

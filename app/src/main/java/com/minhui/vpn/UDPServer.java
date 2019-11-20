@@ -36,7 +36,7 @@ public class UDPServer implements Runnable {
 
             });
 
-    public Object selectorLocker=new Object();
+    public final Object selectorLocker=new Object();
     public void start() {
         Thread thread = new Thread(this, "UDPServer");
         thread.start();
