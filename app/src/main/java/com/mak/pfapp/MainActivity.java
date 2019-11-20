@@ -17,18 +17,26 @@ import android.widget.Toast;
 import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.ads.initialization.InitializationStatus;
 import com.google.android.gms.ads.initialization.OnInitializationCompleteListener;
+import com.mak.pfapp.ad.u3d;
 import com.minhui.vpn.ForwardConfig;
 import com.minhui.vpn.utils.VpnServiceHelper;
 import android.widget.Button;
 import android.widget.EditText;
 import org.json.JSONArray;
 import org.json.JSONException;
+import com.unity3d.ads.IUnityAdsListener;
+import com.unity3d.ads.UnityAds;
 
 public class MainActivity extends AppCompatActivity {
     private final Handler mHandler = new Handler();
     private Button btn_start;
     private EditText editText_rule;
     private VpnServiceHelper vpnServiceHelper;
+
+
+
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -40,6 +48,8 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         gad.reloadAd(this);
+
+        u3d.get().init(this);
 
         checkAuth(new Runnable() {
             @Override

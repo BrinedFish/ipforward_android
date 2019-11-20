@@ -44,9 +44,13 @@
                 android:layout_height="wrap_content" android:orientation="horizontal"
                 android:gravity="end">
             <Button
-                    android:text="获取点数" android:layout_gravity="end|center_vertical"
+                    android:text="Ad 1" android:layout_gravity="end|center_vertical"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" android:id="@+id/btn_getpoint"/>
+                    android:layout_height="wrap_content" android:id="@+id/btn_ad1"/>
+            <Button
+                    android:text="Ad 2" android:layout_gravity="end|center_vertical"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:id="@+id/btn_ad2"/>
         </LinearLayout>
     </LinearLayout>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

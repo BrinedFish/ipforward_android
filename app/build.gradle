@@ -33,4 +33,5 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.1.0-alpha4'
     implementation 'com.squareup.okio:okio:2.4.0'
     implementation 'com.google.android.gms:play-services-ads:18.3.0'
+    implementation project(':unity-ads')
 }

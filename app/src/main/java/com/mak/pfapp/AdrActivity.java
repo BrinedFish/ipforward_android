@@ -10,6 +10,7 @@ import com.google.android.material.snackbar.Snackbar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import android.view.View;
+import com.mak.pfapp.ad.u3d;
 
 public class AdrActivity extends AppCompatActivity {
     TextView label_point;
@@ -24,7 +25,7 @@ public class AdrActivity extends AppCompatActivity {
                 finish();
             }
         });
-        findViewById(R.id.btn_getpoint).setOnClickListener(new View.OnClickListener() {
+        findViewById(R.id.btn_ad1).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (gad.getAd().isLoaded()) {
@@ -56,6 +57,17 @@ public class AdrActivity extends AppCompatActivity {
                     };
                     gad.getAd().show(AdrActivity.this, adCallback);
                 } else {
+                    Toast.makeText(getApplicationContext(), " Ad not Loaded", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+        findViewById(R.id.btn_ad2).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                u3d u = u3d.get();
+                if (u.isReady()) {
+                    u.show(AdrActivity.this);
+                }else{
                     Toast.makeText(getApplicationContext(), " Ad not Loaded", Toast.LENGTH_SHORT).show();
                 }
             }
