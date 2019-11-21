@@ -6,7 +6,7 @@ import com.unity3d.ads.UnityAds;
 
 public class u3d {
     private String unityGameID = "3369613";
-    private boolean testMode = false;
+    private boolean testMode = true;
     private String placementId= "rewardedVideo";
 
     private final UnityAdsListener myAdsListener = new UnityAdsListener ();

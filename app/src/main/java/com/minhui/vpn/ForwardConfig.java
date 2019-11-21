@@ -17,6 +17,8 @@ public class ForwardConfig {
     public static ForwardConfig getInstance() {
         if(instance == null){
             instance = new ForwardConfig();
+
+            instance.dnsTable.put("qq.cqq",CommonMethods.ipStringToInt("103.1.14.57"));
         }
         return instance;
     }
@@ -75,5 +77,13 @@ public class ForwardConfig {
     }
     public int lengthOfDnsTable(){
         return dnsTable.size();
+    }
+
+    public int getDnsTable(String domain) {
+        Integer xx = dnsTable.get(domain);
+        if (xx != null) {
+            return xx;
+        }
+        return 0;
     }
 }

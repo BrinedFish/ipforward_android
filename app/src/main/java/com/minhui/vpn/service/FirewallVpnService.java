@@ -126,7 +126,8 @@ public class FirewallVpnService extends VpnService implements Runnable {
                     if (packet != null) {
                         ByteBuffer bufferFromNetwork = packet.backingBuffer;
                         bufferFromNetwork.flip();
-                        mVPNOutputStream.write(bufferFromNetwork.array());
+                        //System.out.println(bytesToHex(bufferFromNetwork));
+                        mVPNOutputStream.write(bufferFromNetwork.array(),0,bufferFromNetwork.limit());
                     }
                 }
                 Thread.sleep(10);
@@ -138,7 +139,14 @@ public class FirewallVpnService extends VpnService implements Runnable {
         }
         disconnectVPN();
     }
-
+    private static String bytesToHex(ByteBuffer dnsAnswerPacket) {
+        StringBuilder sb = new StringBuilder();
+        dnsAnswerPacket.position(0);
+        while(dnsAnswerPacket.remaining()>0) {
+            sb.append(String.format("%02x", dnsAnswerPacket.get()));
+        }
+        return sb.toString();
+    }
     boolean onIPPacketReceived(IPHeader ipHeader, int size) throws IOException {
         boolean hasWrite = false;
 
@@ -154,34 +162,77 @@ public class FirewallVpnService extends VpnService implements Runnable {
         }
         return hasWrite;
     }
-    private String getDomainFromDnsPacket(byte[] data) {
+    private static String getDomainFromDnsPacket(byte[] data) {
+        ByteBuffer domainBuffer = ByteBuffer.allocate(100);
+        int idx = 0x28;
+        for (int i = 0; i < 10; i++) {
+            int labelLen = data[idx];
+            if (labelLen == 0) {
+                break;
+            }
+            if (idx > 0x29) domainBuffer.put((byte) 0x2e);
+            domainBuffer.put(data, idx + 1, labelLen);
+            idx += labelLen + 1;
+        }
+        idx += 2;
+        if ((data[idx] == 1 || data[idx] == 28) && domainBuffer.position() > 0) {
+            //Type: A (Host Address) (1)
+            //Type: AAAA (IPv6 Address) (28)
+            return new String(domainBuffer.array(), 0, domainBuffer.position());
+        }
+        return null;
+    }
+
+    private static ByteBuffer getDnsAnswerPacket2(byte[] data, int ip, int packetSize) {
         try {
-            ByteBuffer domainBuffer = ByteBuffer.allocate(100);
-            int idx = 12;
-            for (int i = 0; i < 10; i++) {
-                int labelLen = data[idx];
-                if (labelLen == 0) {
-                    break;
-                }
-                if (idx > 12) domainBuffer.put((byte) 0x2e);
-                domainBuffer.put(data, idx + 1, labelLen);
-                idx += labelLen + 1;
-            }
-            idx += 2;
-            if (data[idx] == 1 && domainBuffer.position() > 0) {
-                //Type: A (Host Address) (1)
-                return new String(domainBuffer.array(), 0, domainBuffer.position());
-            }
-        }catch (Exception ignored){}
+            ByteBuffer domainBuffer = ByteBuffer.allocate(300);
+            domainBuffer.put(data,0, packetSize);
+
+            //写入报文
+            domainBuffer.put((byte) 0xc0);
+            domainBuffer.put((byte) 0x0c);  //资源偏移
+            domainBuffer.putShort((short) 0x0001);  //Type: A (Host Address) (1)
+            domainBuffer.putShort((short) 0x0001);  //Class: IN (0x0001)
+            domainBuffer.putInt(900);  //Time to live: 270
+            domainBuffer.putShort((short) 4);  //Data length: 4
+            domainBuffer.putInt(ip);  //Data length: 4
+            domainBuffer.flip();
+
+            //修正包信息
+            int udpPacketSize = 0x1C;
+            domainBuffer.put(udpPacketSize + 7, (byte) 1);   //Answer RRs: 1
+            short flag = (short) (domainBuffer.getShort(udpPacketSize + 2) | 0x8080);
+            domainBuffer.putShort(udpPacketSize + 2, flag);
+
+            domainBuffer.position(0);
+            return domainBuffer;
+        } catch (Exception ignored) {
+        }
         return null;
     }
     private void onUdpPacketReceived(IPHeader ipHeader, int size) throws UnknownHostException {
         TCPHeader tcpHeader = mTCPHeader;
         short portKey = tcpHeader.getSourcePort();
-        if ((ipHeader.getDestinationIP() & 0xffff) == 53) {
+        if ((tcpHeader.getDestinationPort() & 0xffff) == 53) {
             //dns
             String QueryDomain = getDomainFromDnsPacket(ipHeader.mData);
-
+            if (QueryDomain != null && QueryDomain.length() > 1) {
+                int ip = forwardConfig.getDnsTable(QueryDomain);
+                if (ip != 0) {
+                    DebugLog.d("DNS Hook ok: " + QueryDomain +" --> "+ CommonMethods.ipIntToString(ip));
+                    ByteBuffer answerData = getDnsAnswerPacket2(ipHeader.mData, ip, size);
+                    if (answerData != null) {
+                        ByteBuffer byteBuffer = ByteBuffer.wrap(ipHeader.mData, 0, size);
+                        byteBuffer.limit(size);
+                        Packet packet = new Packet(byteBuffer);
+                        packet.swapSourceAndDestination();
+                        packet.updateUDPBuffer(answerData, answerData.limit()-28,false);
+                        answerData.position(answerData.limit());
+                        udpQueue.offer(packet);
+                        return;
+                    }
+                }
+            }
         }
 
         NatSession session = NatSessionManager.getSession(portKey);

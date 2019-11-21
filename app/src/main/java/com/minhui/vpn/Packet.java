@@ -184,7 +184,7 @@ public class Packet implements Serializable {
         this.playLoadSize = payloadSize;
     }
 
-    public void updateUDPBuffer(ByteBuffer buffer, int payloadSize) {
+    public void updateUDPBuffer(ByteBuffer buffer, int payloadSize, boolean replaceHerad) {
         buffer.position(0);
         fillHeader(buffer);
         backingBuffer = buffer;
@@ -251,7 +251,7 @@ public class Packet implements Serializable {
             tcpLength -= 2;
         }
         if (tcpLength > 0) {
-            sum += BitUtils.getUnsignedByte(buffer.get()) << 8;
+            sum += (BitUtils.getUnsignedByte(buffer.get()) << 8) & 0xffff;
         }
         while (sum >> 16 > 0) {
             sum = (sum & 0xFFFF) + (sum >> 16);
@@ -292,199 +292,6 @@ public class Packet implements Serializable {
         return ipAndrPort;
     }
 
-    public String getSegmentHttpName() {
-        if (!isTCP) {
-            return null;
-        }
-        int lastPosition = backingBuffer.position();
-        byte[] array = backingBuffer.array();
-        isSSL = false;
-        String headerString = new String(array, FIRST_TCP_DATA, playLoadSize);
-        String[] headerLines = headerString.split("\\r\\n");
-        hostName = getHttpHost(headerLines);
-        backingBuffer.position(lastPosition);
-        return hostName;
-    }
-
-    /**
-     * 通过packet包发送的第一个数据判断类型
-     * 如果是http协议 则首先发送的是http的请求头，请求头首先声明请求的类型 包括GET Head POST PUT OPTION TRACE CONNECT
-     * 如果是https协议，则完成socket连接之后开始ssl握手，ssl握手时客户端发给服务器的的第一个包的包内容中包括了访问的域名
-     */
-    public void parseHttpRequestHeader() {
-        if (!isTCP) {
-            return;
-        }
-        int lastPosition = backingBuffer.position();
-        byte[] array = backingBuffer.array();
-        byte firsByte = array[FIRST_TCP_DATA];
-        try {
-            switch (firsByte) {
-                //GET
-                case 'G':
-                    //HEAD
-                case 'H':
-                    //POST, PUT
-                case 'P':
-                    //DELETE
-                case 'D':
-                    //OPTIONS
-                case 'O':
-                    //TRACE
-                case 'T':
-                    //CONNECT
-                case 'C':
-                    isHttp = true;
-                    getHttpHostAndRequestUrl(array);
-                    break;
-                //SSL
-                case 0x16:
-                    getSNI(array);
-                    break;
-                default:
-                    cannotParse = true;
-                    isSSL = false;
-                    Log.d(TAG, "can not parse " + (firsByte & 0xFF) + "   " + ((char) firsByte));
-                    break;
-
-
-            }
-
-
-        } catch (Exception e) {
-
-        } finally {
-            backingBuffer.position(lastPosition);
-        }
-
-    }
-
-    private void getSNI(byte[] buffer) {
-        isSSL = true;
-        int offset = FIRST_TCP_DATA;
-        int count = playLoadSize;
-        int limit = offset + count;
-        if (count > 43 && buffer[offset] == 0x16) { //TLS Client Hello
-            offset += 43; //Skip 43 byte header
-
-            //read sessionID
-            if (offset + 1 > limit) {
-                return;
-            }
-            int sessionIDLength = buffer[offset++] & 0xFF;
-            offset += sessionIDLength;
-
-            //read cipher suites
-            if (offset + 2 > limit) {
-                return;
-            }
-
-            int cipherSuitesLength = CommonMethods.readShort(buffer, offset) & 0xFFFF;
-            offset += 2;
-            offset += cipherSuitesLength;
-
-            //read Compression method.
-            if (offset + 1 > limit) {
-                return;
-            }
-            int compressionMethodLength = buffer[offset++] & 0xFF;
-            offset += compressionMethodLength;
-            if (offset == limit) {
-                DebugLog.wWithLog(TAG, "TLS Client Hello packet doesn't contains SNI info.(offset == limit)");
-                return;
-            }
-
-            //read Extensions
-            if (offset + 2 > limit) {
-                return;
-            }
-            int extensionsLength = CommonMethods.readShort(buffer, offset) & 0xFFFF;
-            offset += 2;
-
-            if (offset + extensionsLength > limit) {
-                DebugLog.wWithLog(TAG, "TLS Client Hello packet is incomplete.");
-                return;
-            }
-
-            while (offset + 4 <= limit) {
-                int type0 = buffer[offset++] & 0xFF;
-                int type1 = buffer[offset++] & 0xFF;
-                int length = CommonMethods.readShort(buffer, offset) & 0xFFFF;
-                offset += 2;
-
-                if (type0 == 0x00 && type1 == 0x00 && length > 5) {
-                    offset += 5;
-                    length -= 5;
-                    if (offset + length > limit) {
-                        return;
-                    }
-                    String serverName = new String(buffer, offset, length);
-                    DebugLog.iWithTag("SNI: %s\n", serverName);
-                    isSSL = true;
-                    hostName = serverName;
-                    return;
-                } else {
-                    offset += length;
-                }
-
-            }
-            DebugLog.eWithTag(TAG, "TLS Client Hello packet doesn't contains Host field info.");
-            return;
-        } else {
-            DebugLog.eWithTag(TAG, "Bad TLS Client Hello packet.");
-            return;
-        }
-    }
-
-    private void getHttpHostAndRequestUrl(byte[] array) {
-        isSSL = false;
-        String headerString = new String(array, FIRST_TCP_DATA, playLoadSize);
-        String[] headerLines = headerString.split("\\r\\n");
-        String host = getHttpHost(headerLines);
-        if (!TextUtils.isEmpty(host)) {
-            this.hostName = host;
-        }
-        String[] parts = headerLines[0].trim().split(" ");
-        if (parts.length == 3 || parts.length == 2) {
-            method = parts[0];
-            urlPath = parts[1];
-            DebugLog.dWithTag(TAG, "urlPath is " + urlPath);
-            if (urlPath.startsWith("/")) {
-                if (hostName != null) {
-                    requestUrl = "http://" + hostName + urlPath;
-                }
-            } else if (urlPath.startsWith("http")) {
-                requestUrl = urlPath;
-            } else {
-                requestUrl = "http://" + urlPath;
-            }
-        }
-    }
-
-
-    private String getHttpHost(String[] headerLines) {
-        for (int i = 1; i < headerLines.length; i++) {
-            String[] nameValueStrings = headerLines[i].split(":");
-            if (nameValueStrings.length == 2 || nameValueStrings.length == 3) {
-                String name = nameValueStrings[0].toLowerCase(Locale.ENGLISH).trim();
-                String value = nameValueStrings[1].trim();
-                if ("host".equals(name)) {
-                    Log.d(TAG, "value is " + value);
-                    return value;
-                }
-            }
-        }
-        return null;
-    }
-
-
-    public boolean isHttp() {
-        return isHttp;
-    }
-
-    public String getUrlPath() {
-        return urlPath;
-    }
 
     /**
      * IP头部总共20个字节
