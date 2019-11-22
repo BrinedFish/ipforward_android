@@ -1,6 +1,5 @@
 package com.mak.pfapp;
 
-import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -13,7 +12,6 @@ import android.widget.*;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.snackbar.Snackbar;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -22,9 +20,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class LocalPfCfgActivity extends AppCompatActivity {
+    public final static String SETTING_TYPE = "SETTING_TYPE";
+    public final static int SETTING_TYPE_DNS = 1;
+    public final static int SETTING_TYPE_IP = 2;
+
     SharedPreferences sp;
     JSONArray cfg_data;
     ListView listView;
+    String CfgtableaName = "localpfcfg";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -36,7 +39,18 @@ public class LocalPfCfgActivity extends AppCompatActivity {
                 finish();
             }
         });
-
+        switch (getIntent().getIntExtra(SETTING_TYPE, SETTING_TYPE_IP))
+        {
+            case SETTING_TYPE_DNS:
+                setTitle("本地DNS设置");
+                CfgtableaName = "localdnscfg";
+                break;
+            case SETTING_TYPE_IP:
+            default:
+                setTitle("本地IP设置");
+                CfgtableaName = "localpfcfg";
+                break;
+        }
         FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -46,7 +60,7 @@ public class LocalPfCfgActivity extends AppCompatActivity {
         });
         sp = getSharedPreferences(getString(R.string.app_name), Context.MODE_PRIVATE);
         try {
-            cfg_data = new JSONArray(sp.getString("localpfcfg","[]"));
+            cfg_data = new JSONArray(sp.getString(CfgtableaName,"[]"));
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -70,7 +84,7 @@ public class LocalPfCfgActivity extends AppCompatActivity {
                                 public void onClick(DialogInterface dlg, int paramInt) {
                                     //Toast.makeText(LocalPfCfgActivity.this,aRow.optString("data", ""), Toast.LENGTH_SHORT).show();
                                     cfg_data.remove(position);
-                                    sp.edit().putString("localpfcfg", cfg_data.toString()).apply();
+                                    sp.edit().putString(CfgtableaName, cfg_data.toString()).apply();
                                     refreshLvData();
                                     dlg.dismiss();
                                 }
@@ -122,7 +136,7 @@ public class LocalPfCfgActivity extends AppCompatActivity {
                         obj.put("data", edt_data.getText());
                         cfg_data.put(obj);
                     }
-                    sp.edit().putString("localpfcfg", cfg_data.toString()).apply();
+                    sp.edit().putString(CfgtableaName, cfg_data.toString()).apply();
                 } catch (JSONException e) {
                 }
                 refreshLvData();

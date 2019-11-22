@@ -43,7 +43,7 @@ public class MainActivity extends AppCompatActivity {
         });
         gad.reloadAd(this);
 
-       // u3d.get().init(this);
+        u3d.get().init(this);
 
         checkAuth(new Runnable() {
             @Override

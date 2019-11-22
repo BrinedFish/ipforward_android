@@ -23,6 +23,7 @@ public class cfgActivity extends AppCompatActivity {
     EditText edit_api_addr;
     Switch switch_ishentai;
     TextView lbl_local_pf_cnt;
+    TextView lbl_local_dns_cnt;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -83,6 +84,24 @@ public class cfgActivity extends AppCompatActivity {
             public void onClick(View v) {
                 Intent adr = new Intent();
                 adr.setClass(cfgActivity.this, LocalPfCfgActivity.class);
+                adr.putExtra(LocalPfCfgActivity.SETTING_TYPE, LocalPfCfgActivity.SETTING_TYPE_IP);
+                cfgActivity.this.startActivity(adr);
+            }
+        });
+
+        lbl_local_dns_cnt = findViewById(R.id.lbl_local_dns_cnt);
+        try {
+            JSONArray jo = new JSONArray(sp.getString("localdnscfg","[]"));
+            lbl_local_dns_cnt.setText(jo.length()+"  >");
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        ((View)lbl_local_dns_cnt.getParent()).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent adr = new Intent();
+                adr.setClass(cfgActivity.this, LocalPfCfgActivity.class);
+                adr.putExtra(LocalPfCfgActivity.SETTING_TYPE, LocalPfCfgActivity.SETTING_TYPE_DNS);
                 cfgActivity.this.startActivity(adr);
             }
         });
