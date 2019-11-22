@@ -17,8 +17,6 @@ public class ForwardConfig {
     public static ForwardConfig getInstance() {
         if(instance == null){
             instance = new ForwardConfig();
-
-            instance.dnsTable.put("qq.cqq",CommonMethods.ipStringToInt("103.1.14.57"));
         }
         return instance;
     }

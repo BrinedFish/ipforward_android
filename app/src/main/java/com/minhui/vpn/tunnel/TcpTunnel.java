@@ -138,7 +138,7 @@ public abstract class TcpTunnel implements KeyHandler {
                 sendToBrother(key, buffer);
             } else if (bytesRead < 0) {
                 //Thread.sleep(300);
-                //this.dispose();
+                this.dispose();
             }
         } catch (Exception ex) {
             DebugLog.e("onReadable catch an exception: %s", ex);

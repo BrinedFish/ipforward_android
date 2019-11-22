@@ -22,7 +22,9 @@ public class gad {
                 // Ad failed to load.
             }
         };
-        rewardedAd.loadAd(new AdRequest.Builder().addTestDevice("5AF77A538D4239F201B85DE44B2D1217").build(), adLoadCallback);
+        rewardedAd.loadAd(new AdRequest.Builder()
+                .addTestDevice("5AF77A538D4239F201B85DE44B2D1217")
+                .build(), adLoadCallback);
         return rewardedAd;
     }
     public static void reloadAd(Context context){

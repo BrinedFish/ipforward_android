@@ -184,7 +184,7 @@ public class Packet implements Serializable {
         this.playLoadSize = payloadSize;
     }
 
-    public void updateUDPBuffer(ByteBuffer buffer, int payloadSize, boolean replaceHerad) {
+    public void updateUDPBuffer(ByteBuffer buffer, int payloadSize) {
         buffer.position(0);
         fillHeader(buffer);
         backingBuffer = buffer;

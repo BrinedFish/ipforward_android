@@ -24,18 +24,12 @@ import android.widget.Button;
 import android.widget.EditText;
 import org.json.JSONArray;
 import org.json.JSONException;
-import com.unity3d.ads.IUnityAdsListener;
-import com.unity3d.ads.UnityAds;
 
 public class MainActivity extends AppCompatActivity {
     private final Handler mHandler = new Handler();
     private Button btn_start;
     private EditText editText_rule;
     private VpnServiceHelper vpnServiceHelper;
-
-
-
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,7 +43,7 @@ public class MainActivity extends AppCompatActivity {
         });
         gad.reloadAd(this);
 
-        u3d.get().init(this);
+       // u3d.get().init(this);
 
         checkAuth(new Runnable() {
             @Override
@@ -68,15 +62,27 @@ public class MainActivity extends AppCompatActivity {
                 if(vpnServiceHelper.vpnRunningStatus()){
                     vpnServiceHelper.stopVpn();
                 }else {
-                    ForwardConfig.getInstance().ResetForwardTable();
-                    ForwardConfig.getInstance().AppendForwardTable(Api.PfData);
+                    ForwardConfig fc = ForwardConfig.getInstance();
+                    SharedPreferences sp = getSharedPreferences(getString(R.string.app_name), Context.MODE_PRIVATE);
+                    //初始化转发规则
+                    fc.ResetForwardTable();
+                    fc.AppendForwardTable(Api.PfData);
                     try {
-                        SharedPreferences sp = getSharedPreferences(getString(R.string.app_name), Context.MODE_PRIVATE);
-                        JSONArray cfg_data = new JSONArray(sp.getString("localpfcfg","[]"));
-                        ForwardConfig.getInstance().AppendForwardTable(cfg_data);
-                    } catch (JSONException e) { }
-                    guiLog("应用规则：" + ForwardConfig.getInstance().lengthOfForwardTable());
-                    if(!vpnServiceHelper.startVPN()){
+                        JSONArray cfg_data = new JSONArray(sp.getString("localpfcfg", "[]"));
+                        fc.AppendForwardTable(cfg_data);
+                    } catch (JSONException ignored) {
+                    }
+                    //初始化DNS规则
+                    fc.ResetDnsTable();
+                    fc.AppendDnsTable(Api.dnsData);
+                    try {
+                        JSONArray cfg_data = new JSONArray(sp.getString("localdnscfg", "[]"));
+                        fc.AppendDnsTable(cfg_data);
+                    } catch (JSONException ignored) {
+                    }
+
+                    guiLog("应用规则：" + fc.lengthOfForwardTable() + "+" + fc.lengthOfDnsTable());
+                    if (!vpnServiceHelper.startVPN()) {
                         guiLog("请重新连接...");
                     }
                 }
@@ -216,9 +222,9 @@ public class MainActivity extends AppCompatActivity {
                         String msg;
                         if (result.ok){
                             try {
-                                JSONArray data = result.data.getJSONArray("list");
-                                guiLog("下载规则："+data.length());
-                                Api.PfData = data;
+                                Api.PfData = result.data.getJSONArray("list");
+                                Api.dnsData = result.data.getJSONArray("dns");
+                                guiLog("下载规则：" + Api.PfData.length() + "+" + Api.dnsData.length());
                                 msg = "ok";
                             } catch (JSONException e) {
                                 msg = e.getMessage();
@@ -270,4 +276,10 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        vpnServiceHelper.stopVpn();
+    }
 }

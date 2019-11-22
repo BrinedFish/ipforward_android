@@ -21,6 +21,7 @@ public class Api {
     public static String ViewPageUrl = "http://www.baidu.com/";
     public static String ViewPageUrlAuth = "1234567890123";
     public static JSONArray PfData =  new JSONArray();
+    public static JSONArray dnsData =  new JSONArray();
 
     private static ExecutorService executor = null;
 

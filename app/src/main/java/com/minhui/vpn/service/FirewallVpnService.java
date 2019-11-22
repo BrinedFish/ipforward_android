@@ -226,7 +226,7 @@ public class FirewallVpnService extends VpnService implements Runnable {
                         byteBuffer.limit(size);
                         Packet packet = new Packet(byteBuffer);
                         packet.swapSourceAndDestination();
-                        packet.updateUDPBuffer(answerData, answerData.limit()-28,false);
+                        packet.updateUDPBuffer(answerData, answerData.limit()-28);
                         answerData.position(answerData.limit());
                         udpQueue.offer(packet);
                         return;

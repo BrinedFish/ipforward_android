@@ -85,7 +85,7 @@ public class UDPTunnel implements KeyHandler {
         } else {
             DebugLog.dWithTag(TAG, "read readBytes:" + readBytes + "ipAndPort:" + ipAndPort);
             Packet newPacket = referencePacket.duplicated();
-            newPacket.updateUDPBuffer(receiveBuffer, readBytes,true);
+            newPacket.updateUDPBuffer(receiveBuffer, readBytes);
             receiveBuffer.position(HEADER_SIZE + readBytes);
             outputQueue.offer(newPacket);
             DebugLog.dWithTag(TAG, "read  data :readBytes:" + readBytes + "ipAndPort:" + ipAndPort);
